@@ -5,7 +5,7 @@
 > Resume artifact pra novas sessões do Claude Code. Lido automaticamente pelo agent durante pipelines; serve de baseline pra qualquer dev/sessão que pegar o projeto.
 >
 > **Atualizado:** 2026-04-28
-> **Estado:** prompts #1 (setup) e #2 (tooling) concluídos e pushados. Próximo: prompt #3 (UI Fundação).
+> **Estado:** prompts #1 (setup), #2 (tooling) e #3 (`@ethos/ui` fundação) concluídos e pushados. Próximo: prompt #4 (`@ethos/ui` — primitivos Radix-based).
 
 ## 1. O que é o projeto
 
@@ -50,6 +50,10 @@ Documentação completa em `docs/` (14 .md) e `CLAUDE.md` na raiz. `docs/12-PROM
 ## 4. Progresso (commits no main, pushados em origin)
 
 ```
+44dfee6  feat(ui): storybook 8 + stories de primitivas (button, input, card)   ← Wave 3 prompt #3
+9970b0d  feat(ui): primitivas Button, Input e Card no @ethos/ui                ← Wave 2 prompt #3
+b989d31  chore(ui): bootstrap @ethos/ui (tsup + tailwind preset + globals)     ← Wave 1 prompt #3
+438c3eb  docs(handoff): atualiza spec após prompt #2 concluído
 03b4e5b  docs(forge): atualiza prompt #2 com aprendizados pós-implementação
 24cc033  chore(forge): adiciona workflow CI (lint+typecheck+test+build)        ← Wave 3 prompt #2
 da7cd00  chore(forge): adiciona Husky 9 + lint-staged + commitlint             ← Wave 2 prompt #2
@@ -82,32 +86,43 @@ ca8a429  docs: documentação inicial do Forge
   - Hooks ativos: `pre-commit` roda lint-staged, `commit-msg` roda commitlint config-conventional
   - CI em `.github/workflows/ci.yml` (matrix Node 20, cache pnpm + turbo, least privilege)
   - 7/7 ACs validados; QA emitido no harness events log
+- ✅ **`@ethos/ui` fundação concluída (prompt #3)** — 3 waves em 3 commits
+  - tsup ESM+dts + Tailwind 3.4 preset CJS (D9) + PostCSS + CSS vars HSL completas (light + dark) do doc 02
+  - 3 primitivas: Button (cva, 6 variants × 4 sizes, asChild via Radix Slot, loading com Loader2), Input (h-10 + focus ring), Card (6 sub-componentes)
+  - Storybook 8 + Vite + addon-themes (`withThemeByClassName` light/dark) + viewports 375/768/1024/1440 + a11y
+  - 22 stories totais (11 Button + 7 Input + 4 Card), build-storybook estático passa
+  - Helper `cn()` (clsx + tailwind-merge), `forwardRef + displayName` em todos os componentes
+  - Novos presets em `@ethos/config`: `tsconfig/react-library.json` (D7); `base.json` agora inline (sem extends da raiz) — destrava resolver no Windows/pnpm
+  - 10/11 ACs verde; AC#8 (storybook dev visual em :6006) é validação manual humana
 - ✅ Branch `main` em sync com `origin/main` (auto-push ativo)
 
-## 6. Próximo passo: prompt #3 (Biblioteca @ethos/ui — Fundação)
+## 6. Próximo passo: prompt #4 (`@ethos/ui` — primitivos Radix-based)
 
-Escopo do prompt #3 conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §3 (linhas 181+).
+Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §4. Vai expandir de 3 → ~30 primitivos consumindo Radix UI:
 
-**Stack visual já travada** em `docs/02-IDENTIDADE-VISUAL.md` — paleta Ethos, escalas tipográficas, espaçamento, animações 150-200ms ease-out. Não tem decisão de design pendente; é execução do que já foi decidido.
+- Form: Label, Textarea, Select, Checkbox, Radio, Switch, Slider, Toggle
+- Overlays: Dialog, AlertDialog, Sheet, Popover, Tooltip, HoverCard, DropdownMenu, ContextMenu
+- Navegação: Tabs, NavigationMenu, Breadcrumb, Pagination, Accordion
+- Display: Badge, Avatar, Separator, Progress, Skeleton, Toast (Sonner)
+- Outros conforme prompt #4
 
-**Primeira entrega (Fundação):**
+**Estado de partida prompt #4:**
 
-- **Tokens** — paleta + escalas em `packages/ui/src/tokens/` (cores semânticas, raio, sombras, tipografia)
-- **3 primitivos canônicos:**
-  - `Button` (variants: primary/secondary/ghost/destructive; sizes: sm/md/lg; loading state)
-  - `Input` (com label, error state, helper text, prefix/suffix)
-  - `Card` (header, content, footer slots; elevations)
-- **Storybook 8 com Vite builder** (não Webpack) — `packages/ui/.storybook/` + stories `*.stories.tsx` por componente, viewports 375/768/1024/1440
-- **Tailwind preset** em `packages/ui/tailwind-preset.js` consumido pelos apps via `presets: [require('@ethos/ui/tailwind-preset')]`
+- Bootstrap completo (D1–D11 do prompt #3 honrados): tsup, tailwind preset, globals.css, cn helper
+- 3 primitivas existentes funcionam como template/padrão para os ~30 novos
+- Decisões abertas para resolver no #4:
+  - **`tsconfig.base.json` raiz órfão** após inline no `@ethos/config` — decidir manter (compatibilidade docs/03 e docs/09) ou remover
+  - **`incremental: false` override** local em `packages/ui/tsconfig.json` — mover desligamento pro preset base (`@ethos/config/tsconfig/base.json`) ou manter local
+  - **`tailwind.config.ts` content** atualmente declara `./src/**/*` + `./.storybook/**/*` no preset; revisar quando `apps/playground` consumir o preset (prompt futuro)
+  - **`<Button asChild loading>`** quebra Radix Slot single-child; resolver quando primeiro callsite real precisar combinar
+  - **`dist/index.d.mts`** (não `.d.ts`) — comportamento padrão do tsup com `format: ['esm']`; aceitável dado D10 (workspace consumers usam src direto)
 
-**Princípios não-negociáveis (recap):**
+**Princípios reaproveitados (não-negociáveis):**
 
-- **Não copiar shadcn cru.** Inspiração estrutural (Radix base, slot pattern, cn() helper) é OK; estética e tokens são proprietários. Cada componente é redesenhado com paleta Ethos antes de entrar.
-- Sem CSS-in-JS (só Tailwind), sem libs UI prontas (MUI/Chakra/Mantine/Ant), animações no spec.
-- Mobile-first: cada componente testado em 375/768/1024/1440 no Storybook antes do commit.
-- TypeScript strict; `forwardRef` + `displayName` em todos os primitivos; props discriminated unions onde aplicável.
-
-**Critério de aceite:** Storybook builda local; cada primitivo tem ≥3 stories (default + variants + edge cases); `pnpm --filter @ethos/ui build` exit 0; `pnpm --filter @ethos/ui storybook` roda sem warning de viewport.
+- Não copiar shadcn cru — inspiração estrutural (Radix + slot + cn), estética/tokens proprietários
+- Sem CSS-in-JS (só Tailwind), sem libs UI prontas
+- Mobile-first com viewports do Storybook
+- TypeScript strict; `forwardRef` + `displayName` em todos os primitivos
 
 ## 7. Pipeline planejado (#3 a #23)
 
@@ -115,8 +130,8 @@ Escopo do prompt #3 conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §3 (linhas 181+).
 | ----- | ------------------------------------------------------------------------------------- | -------------- |
 | 1     | Setup do monorepo                                                                     | ✅ Concluído   |
 | 2     | Configuração de tooling                                                               | ✅ Concluído   |
-| 3     | @ethos/ui — Fundação (Button, Input, Card + tokens)                                   | ⏭️ **Próximo** |
-| 4     | @ethos/ui — Primitivos (~30 componentes Radix-based)                                  | Pendente       |
+| 3     | @ethos/ui — Fundação (Button, Input, Card + tokens)                                   | ✅ Concluído   |
+| 4     | @ethos/ui — Primitivos (~30 componentes Radix-based)                                  | ⏭️ **Próximo** |
 | 5     | @ethos/ui — Compostos (DataTablePro, FormBuilder, KpiCard, etc.)                      | Pendente       |
 | 6     | @ethos/ui — Layouts (Dashboard, Auth, Settings)                                       | Pendente       |
 | 7     | Setup do app API (NestJS em `templates/starter/apps/api/`)                            | Pendente       |
@@ -153,6 +168,12 @@ Para cada prompt em `docs/12-PROMPTS-CLAUDE-CODE.md`:
   - `docs/11-ROADMAP-CONSTRUCAO.md` L247-248 (bullets descrevendo conteúdo INTERNO de `templates/starter/`)
 - **`docs/10-DEPLOY-RAILWAY.md` intacto** — Railway deploya o starter clonado, onde `apps/api/` é root relativo do projeto cliente.
 - **PR de teste do CI no GitHub** (baixa prioridade) — workflow `.github/workflows/ci.yml` foi validado localmente como YAML válido, mas o execution-real só vira evidência num PR efetivo. Disparar quando primeira branch de feature subir.
+- **Concerns abertos do prompt #3** (resolver durante #4):
+  - `tsconfig.base.json` raiz órfão após inline no `@ethos/config/tsconfig/base.json` (manter/remover)
+  - `incremental: false` overridado em `packages/ui/tsconfig.json` (mover pro preset base)
+  - `<Button asChild loading>` quebra Radix Slot single-child (refatorar quando callsite real exigir)
+  - `dist/index.d.mts` em vez de `.d.ts` — aceitável (D10), mas se virar requisito de publicação, ajustar `format` no tsup
+  - Atualizar `docs/12-PROMPTS-CLAUDE-CODE.md §3` com bloco `[NOTAS TÉCNICAS — atualizadas em 2026-04-28]` capturando os aprendizados de Storybook 8 builder Vite, Tailwind preset CJS path, CSS vars syntax — commit `docs(forge):` separado pós-CLOSE seguindo padrão do prompt #2
 
 ## 10. Memória local do Claude Code (auto-memory)
 
