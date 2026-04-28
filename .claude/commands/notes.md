@@ -171,3 +171,17 @@ Você é Claude Code retomando o projeto Ethos Forge.
 4. Próximo passo: prompt #2 (tooling) em docs/12-PROMPTS-CLAUDE-CODE.md.
 5. Siga o protocolo da seção 8: leia docs referenciados → plano em bullets → aguarde OK → execute → reporte.
 ```
+
+## 13. Mustard — infra operacional
+
+Este projeto usa mustard (https://github.com/rubensrpj/mustard) como skill operacional padrão. Os 17 slash commands estão versionados em `.claude/commands/mustard/`. Qualquer sessão Claude Code rodando neste repo tem acesso automático a:
+
+- `/mustard:scan` — inventário do projeto
+- `/mustard:resume` — retomar de onde parou
+- `/mustard:feature` — criar feature spec
+- `/mustard:bugfix` — fluxo de bugfix
+- `/mustard:knowledge` — gerenciar knowledge base
+- `/mustard:review`, `/mustard:qa`, `/mustard:status`, `/mustard:metrics`
+- (e outros — total de 17 commands)
+
+Use estes commands ao invés de improvisar fluxos de trabalho.
