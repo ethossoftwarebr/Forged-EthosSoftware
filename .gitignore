@@ -52,3 +52,13 @@ prisma/migrations/dev*
 
 # Generated
 */src/generated/
+
+# Claude Code — ignora por padrão, exceto artefatos de projeto
+.claude/*
+!.claude/commands/
+!.claude/commands/**
+!.claude/knowledge.json
+
+# Backups e configs pessoais
+.claude.backup.*/
+mustard.json

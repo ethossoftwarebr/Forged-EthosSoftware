@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "entity-1777352555841",
+      "type": "entity",
+      "name": "Ethos Forge — project state snapshot (2026-04-28)",
+      "description": "Handoff snapshot pos prompt #1 + doc-sweep. 4 commits locais, 17 workspaces validados. Decisoes travadas: Forge=kit (apps de produto em templates/starter/apps), 15 packages (7 infra + 8 plugaveis), generators em tools/, Modelo B CRUD, multi-tenant via AsyncLocalStorage, argon2id+JWT cookie httpOnly. Proximo passo: prompt #2 (tooling: ESLint+Prettier+Husky+commitlint+CI). Spec completa em .claude/commands/notes.md.",
+      "source": "manual-handoff",
+      "tags": [
+        "forge",
+        "handoff",
+        "resume",
+        "snapshot",
+        "prompt-1",
+        "monorepo"
+      ],
+      "confidence": 0.9,
+      "occurrences": 1,
+      "createdAt": "2026-04-28T05:02:35.840Z",
+      "updatedAt": "2026-04-28T05:02:35.840Z",
+      "lastSeen": "2026-04-28T05:02:35.840Z"
+    }
+  ]
+}
