@@ -1,3 +1,5 @@
+import globals from 'globals';
+
 import base from '@ethos/config/eslint/base.mjs';
 
 /**
@@ -6,6 +8,13 @@ import base from '@ethos/config/eslint/base.mjs';
  */
 const config = [
   ...base,
+  {
+    files: ['**/*.config.{js,cjs}'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node },
+    },
+  },
   {
     ignores: [
       '**/dist/**',
