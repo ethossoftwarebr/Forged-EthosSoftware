@@ -10,8 +10,9 @@
   "exports": {
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/library.json": "./tsconfig/library.json",
-    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
     "./tsconfig/nestjs.json": "./tsconfig/nestjs.json",
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
+    "./tsconfig/react-library.json": "./tsconfig/react-library.json",
     "./eslint/base.mjs": "./eslint/base.mjs",
     "./eslint/nextjs.mjs": "./eslint/nextjs.mjs",
     "./eslint/node.mjs": "./eslint/node.mjs"

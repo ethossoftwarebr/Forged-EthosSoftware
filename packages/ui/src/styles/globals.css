@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Cores estruturais */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primária da Ethos — roxo-azulado moderno */
+    --primary: 240 78% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secundária neutra */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Mute (textos discretos, fundos sutis) */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Acento */
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    /* Destrutivo (delete, erro) */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Estados */
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --info: 199 89% 48%;
+
+    /* Borders e inputs */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 240 78% 60%;
+
+    /* Radius */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 220 14% 96%;
+    --card: 222 47% 8%;
+    --card-foreground: 220 14% 96%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 220 14% 96%;
+
+    --primary: 240 78% 65%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 220 14% 96%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 220 14% 96%;
+
+    --destructive: 0 63% 55%;
+    --destructive-foreground: 220 14% 96%;
+
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --info: 199 89% 60%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 240 78% 65%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: theme('fontFamily.sans');
+  }
+}
