@@ -141,6 +141,7 @@ enum Role {
 Endpoint: `POST /auth/register`
 
 Body:
+
 ```json
 {
   "name": "João Silva",
@@ -151,6 +152,7 @@ Body:
 ```
 
 Lógica:
+
 1. Valida email único
 2. Hash da senha com bcrypt (cost 12)
 3. Cria `Tenant` (slug auto-gerado a partir do nome)
@@ -164,6 +166,7 @@ Lógica:
 Endpoint: `POST /tenants/:tenantId/invite` (precisa ser admin/owner)
 
 Body:
+
 ```json
 {
   "email": "maria@example.com",
@@ -172,6 +175,7 @@ Body:
 ```
 
 Lógica:
+
 1. Valida que o requestor tem role admin ou owner no tenant
 2. Verifica se email já é user. Se for, cria `TenantMember` direto. Se não, manda email de convite.
 3. Email tem link com token único válido por 7 dias
@@ -186,15 +190,17 @@ Lógica:
 Endpoint: `POST /auth/login`
 
 Body:
+
 ```json
 {
   "email": "joao@example.com",
   "password": "...",
-  "tenantSlug": "pet-shop-joao"  // opcional se user só tem 1 tenant
+  "tenantSlug": "pet-shop-joao" // opcional se user só tem 1 tenant
 }
 ```
 
 Lógica:
+
 1. Busca user por email
 2. Compara hash de senha (bcrypt)
 3. Verifica que user tem membership no tenant especificado (ou tem só 1 tenant e usa esse)
@@ -219,6 +225,7 @@ Rate limit: **5 tentativas / 15 minutos / IP**.
 Endpoint: `POST /auth/refresh`
 
 Body:
+
 ```json
 {
   "refreshToken": "..."
@@ -226,6 +233,7 @@ Body:
 ```
 
 Lógica:
+
 1. Valida refresh token (não expirado, não revogado)
 2. Gera novo access token
 3. Opcionalmente rotaciona refresh token (recomendado)
@@ -236,6 +244,7 @@ Lógica:
 Endpoint: `POST /auth/logout`
 
 Lógica:
+
 1. Revoga refresh token (`revokedAt = now()`)
 2. Encerra session ativa
 3. Retorna 204
@@ -306,7 +315,11 @@ export class AuthModule {}
 `packages/auth/src/backend/guards/jwt-auth.guard.ts`:
 
 ```typescript
-import { Injectable, ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import {
+  Injectable,
+  ExecutionContext,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
 @Injectable()
@@ -323,7 +336,12 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
 `packages/auth/src/backend/guards/roles.guard.ts`:
 
 ```typescript
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from "@nestjs/common";
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ROLES_KEY } from "../decorators/roles.decorator";
 
@@ -332,10 +350,10 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(
-      ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requiredRoles?.length) return true;
 
@@ -432,7 +450,9 @@ export function withTenancy(prisma: PrismaClient) {
           if (!TENANT_MODELS.includes(model)) return query(args);
 
           // Injeta tenantId em queries de leitura
-          if (["findUnique", "findFirst", "findMany", "count"].includes(operation)) {
+          if (
+            ["findUnique", "findFirst", "findMany", "count"].includes(operation)
+          ) {
             args.where = { ...args.where, tenantId };
           }
 
@@ -442,7 +462,9 @@ export function withTenancy(prisma: PrismaClient) {
           }
 
           // Garante que updates/deletes respeitam tenant
-          if (["update", "updateMany", "delete", "deleteMany"].includes(operation)) {
+          if (
+            ["update", "updateMany", "delete", "deleteMany"].includes(operation)
+          ) {
             args.where = { ...args.where, tenantId };
           }
 
@@ -544,6 +566,7 @@ export function useLogout() {
 - **Refresh token:** httpOnly cookie (setado pelo backend, frontend não vê)
 
 Vantagens:
+
 - Access token em memória → imune a XSS
 - Refresh em httpOnly cookie → imune a XSS e enviado automaticamente em requests de refresh
 - Nada em localStorage (XSS-vulnerable)
@@ -616,7 +639,7 @@ export async function fetchWithAuth(input: RequestInfo, init?: RequestInit) {
 
 ### Middleware de proteção de rotas (Next.js)
 
-`apps/web/src/middleware.ts`:
+`templates/starter/apps/web/src/middleware.ts`:
 
 ```typescript
 import { NextResponse } from "next/server";
@@ -711,6 +734,7 @@ Pra users com múltiplos tenants:
 ### MFA (autenticação em 2 fatores)
 
 Suporte planejado pra v2:
+
 - TOTP (Google Authenticator, Authy)
 - SMS via Twilio
 - Email OTP
@@ -718,6 +742,7 @@ Suporte planejado pra v2:
 ### SSO (Single Sign-On)
 
 Suporte planejado pra v2:
+
 - Google OAuth
 - Microsoft OAuth
 - SAML genérico
@@ -725,6 +750,7 @@ Suporte planejado pra v2:
 ### Recuperação de senha
 
 Endpoint `POST /auth/forgot-password`:
+
 1. Recebe email
 2. Gera token único, salva hash no DB com expiração 1h
 3. Envia email com link

@@ -70,12 +70,14 @@ Ter o monorepo da Forge funcionando com toda infra básica: workspace pnpm, Turb
 ### O que entregar
 
 **Setup:**
+
 - `packages/ui/` configurada com Tailwind, shadcn CLI, Storybook
 - Tema Ethos (cores, tipografia, radius, shadows) em CSS variables
 - `globals.css` com base styles
 - Storybook acessível via `pnpm storybook`
 
 **Primitives (camada 1) — todos os ~30 componentes shadcn customizados:**
+
 - Button, Input, Label, Textarea, Select, Checkbox, Radio, Switch
 - Card, Dialog, Sheet, Drawer, Popover, Tooltip, HoverCard
 - DropdownMenu, ContextMenu, Tabs, Accordion, Collapsible
@@ -84,11 +86,13 @@ Ter o monorepo da Forge funcionando com toda infra básica: workspace pnpm, Turb
 - Calendar, DatePicker
 
 Todos com:
+
 - Tema Ethos aplicado
 - Stories Storybook (variantes, dark mode)
 - Acessibilidade testada (foco, ARIA, keyboard)
 
 **Compounds (camada 2) — proprietários Ethos:**
+
 - DataTablePro
 - FormBuilder
 - KpiCard
@@ -103,6 +107,7 @@ Todos com:
 - CommandPalette
 
 **Layouts (camada 3):**
+
 - DashboardLayout (sidebar + topbar + conteúdo)
 - AuthLayout (centralizado)
 - SettingsLayout (sub-sidebar)
@@ -136,6 +141,7 @@ Ter `@ethos/auth` e `@ethos/api-base` funcionando. Auth multi-tenant completo, m
 ### O que entregar
 
 **`packages/api-base/`:**
+
 - `tenant/` — interceptor + Prisma extension de multi-tenancy
 - `audit/` — middleware de audit log
 - `crypto/` — Prisma extension de encryption de campos sensíveis
@@ -146,6 +152,7 @@ Ter `@ethos/auth` e `@ethos/api-base` funcionando. Auth multi-tenant completo, m
 - `interceptors/` — TransformResponse, Logging
 
 **`packages/auth/`:**
+
 - Schema Prisma (User, Tenant, TenantMember, RefreshToken, Session, AuditLog)
 - Backend: AuthModule, AuthService, AuthController
 - Endpoints: register, login, refresh, logout, me, forgot-password, reset-password, invite-member
@@ -180,9 +187,10 @@ Ter os geradores funcionando: dado um schema Prisma, geram backend completo (Bas
 
 ### O que entregar
 
-**`packages/generators/`:**
+**`tools/generators/`:**
 
 Backend:
+
 - Configuração de `prisma-generator-nestjs-dto` (cospe DTOs)
 - Configuração de `prisma-crud-generator` (cospe BaseServices)
 - Templates Handlebars próprios:
@@ -194,6 +202,7 @@ Backend:
 - CLI: `forge:generate:backend`
 
 Frontend:
+
 - Configuração de `@hey-api/openapi-ts` (gera tipos + hooks TanStack Query)
 - Templates Handlebars próprios:
   - `list-page.hbs`
@@ -272,12 +281,14 @@ Construir um projeto real (cliente real ou projeto interno) usando a Forge. Vali
 ### Como escolher o projeto piloto
 
 Critérios:
+
 - Escopo médio (~3-6 entidades, sem complexidade exótica)
 - Cliente disposto a ser "primeira validação"
 - Domínio bem definido
 - Sem necessidade urgente dos pacotes plugáveis (eles vêm depois)
 
 Sugestões:
+
 - Sistema interno da Ethos (CRM próprio, painel de propostas, painel de projetos)
 - Cliente conhecido com necessidade simples (gestão de clientes + agendamento)
 
@@ -324,6 +335,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que primeiro:** valida o padrão de pacote plugável (backend + react + shared). É o mais usado em demos comerciais. Stack já dominada pela Ethos (Anthropic).
 
 **Entregar:**
+
 - Schema Prisma (ChatSession, ChatMessage)
 - AiChatModule com configuração via forRoot
 - Endpoints REST + streaming SSE
@@ -339,6 +351,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que segundo:** complementar ao ai-chat (usa mesma SDK Anthropic via Vision). Pequeno em escopo. Resolve caso de uso comum (auto-preenchimento via foto de RG).
 
 **Entregar:**
+
 - OcrService com método `extract` genérico (recebe schema Zod)
 - Helpers específicos: extractRg, extractCnh, extractInvoice, extractReceipt
 - Endpoints multipart pra upload
@@ -352,6 +365,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que terceiro:** introduz padrão de OAuth 2.0 com terceiros (será reusado em outros pacotes). Resolve casos comuns (calendar, drive).
 
 **Entregar:**
+
 - Schema Prisma (GoogleConnection)
 - OAuth flow completo (auth URL, callback, refresh)
 - APIs: Calendar, Drive, Sheets
@@ -365,6 +379,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que quarto:** wrapper simples sobre API do n8n. Não tem schema Prisma próprio. Constrói rápido.
 
 **Entregar:**
+
 - N8nService com triggerWorkflow, listExecutions, etc
 - Configuração via forRoot
 - Componentes pra UI de workflows (lista, executions)
@@ -377,6 +392,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que quinto:** alta demanda comercial. Mais complexo (provider duplo: Z-API e WABA). Beneficia-se da experiência de OAuth do `google`.
 
 **Entregar:**
+
 - Schema Prisma (WhatsappContact, Conversation, Message)
 - Adapters: ZapiAdapter, WhatsappBusinessAdapter
 - Endpoints de envio (text, media, template, interactive)
@@ -391,6 +407,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que sexto:** depende de pgvector (precisa habilitar no Postgres). Mais complexo (chunking, embedding, retrieval). Casos de uso menos universais que ai-chat.
 
 **Entregar:**
+
 - Schema Prisma (Document, DocumentChunk com vector)
 - Pipeline de ingestão (parse → chunk → embed → save)
 - Suporte a PDF, DOCX, TXT, HTML, URL
@@ -406,6 +423,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que sétimo:** crítico em segurança. Mais complexo (3 providers, métodos diversos, webhooks). Beneficia-se de tudo aprendido nos pacotes anteriores.
 
 **Entregar:**
+
 - Schema Prisma (PaymentCustomer, Payment, Subscription)
 - Adapters: MercadoPagoAdapter, StripeAdapter, PagSeguroAdapter
 - API unificada: createPayment, refundPayment, etc
@@ -421,6 +439,7 @@ Construir todos os 8 pacotes plugáveis. Cada pacote é um sub-projeto, com sua 
 **Por que oitavo:** mais complexo (3 ERPs, cada um com sua API). Caso de uso menos universal que payments. Pode ser construído sem pressão.
 
 **Entregar:**
+
 - Schema Prisma (ErpProduct, ErpOrder, ErpInvoice — opcional, pode ser camada de cache)
 - Adapters: BlingAdapter, TinyAdapter, OmieAdapter
 - API unificada: produtos, pedidos, NFe, estoque

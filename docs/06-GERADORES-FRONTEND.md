@@ -24,7 +24,7 @@ backend rodando → /api-docs-json (OpenAPI 3.0)
 
 ### Instalação
 
-No `apps/web/`:
+No `templates/starter/apps/web/`:
 
 ```bash
 pnpm add -D @hey-api/openapi-ts
@@ -33,7 +33,7 @@ pnpm add @tanstack/react-query
 
 ### Configuração
 
-`apps/web/openapi-ts.config.ts`:
+`templates/starter/apps/web/openapi-ts.config.ts`:
 
 ```typescript
 import { defineConfig } from "@hey-api/openapi-ts";
@@ -46,11 +46,11 @@ export default defineConfig({
     lint: "eslint",
   },
   plugins: [
-    "@hey-api/client-fetch",         // ou "@hey-api/client-axios"
+    "@hey-api/client-fetch", // ou "@hey-api/client-axios"
     "@hey-api/typescript",
     "@hey-api/sdk",
     "@tanstack/react-query",
-    "zod",                            // opcional: gera schemas Zod a partir do OpenAPI
+    "zod", // opcional: gera schemas Zod a partir do OpenAPI
   ],
 });
 ```
@@ -188,7 +188,10 @@ Uso:
 
 ```typescript
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { listClientsOptions, createClientMutation } from "@/lib/api/generated/@tanstack/react-query.gen";
+import {
+  listClientsOptions,
+  createClientMutation,
+} from "@/lib/api/generated/@tanstack/react-query.gen";
 
 function ClientsPage() {
   const { data, isLoading } = useQuery(listClientsOptions());
@@ -226,7 +229,7 @@ Esse comando:
 
 ### Template da página de lista
 
-`packages/generators/src/frontend/templates/list-page.hbs`:
+`tools/generators/forge-page/templates/list-page.hbs`:
 
 ```handlebars
 "use client";
@@ -307,7 +310,7 @@ export default function {{pascalCasePlural name}}Page() {
 
 ### Template da página de criação
 
-`packages/generators/src/frontend/templates/create-page.hbs`:
+`tools/generators/forge-page/templates/create-page.hbs`:
 
 ```handlebars
 "use client";
@@ -405,14 +408,14 @@ export class CreateClientDto {
   @ApiProperty()
   @IsString()
   @MinLength(2)
-  name: string;          // → field type "text", required, min 2
+  name: string; // → field type "text", required, min 2
 
   @ApiProperty()
   @IsEmail()
-  email: string;         // → field type "email", required
+  email: string; // → field type "email", required
 
   @ApiProperty({ enum: ["A", "B", "C"] })
-  category: string;      // → field type "select" com options
+  category: string; // → field type "select" com options
 }
 ```
 
@@ -422,7 +425,7 @@ export class CreateClientDto {
 
 Além das páginas, o gerador atualiza a Sidebar com novos itens:
 
-`apps/web/src/lib/sidebar-config.ts`:
+`templates/starter/apps/web/src/lib/sidebar-config.ts`:
 
 ```typescript
 export const sidebarConfig = [
@@ -445,6 +448,7 @@ Apenas conteúdo entre markers é regerado. Outras seções da sidebar (configur
 ### Inferência de ícones
 
 O gerador escolhe ícones Lucide baseado no nome da entidade:
+
 - Client/User/Customer → `Users`
 - Product/Item → `Package`
 - Order/Sale → `ShoppingCart`
@@ -453,7 +457,7 @@ O gerador escolhe ícones Lucide baseado no nome da entidade:
 - Message/Email → `Mail`
 - ... etc.
 
-Lista completa em `packages/generators/src/frontend/helpers/icon-mapper.ts`.
+Lista completa em `tools/generators/forge-page/icon-map.ts`.
 
 Se não conseguir inferir, usa `Folder` como default. Dev pode editar manualmente.
 
@@ -473,9 +477,7 @@ Se não conseguir inferir, usa `Folder` como default. Dev pode editar manualment
     {
       key: "totalOrders",
       label: "Pedidos",
-      render: (row) => (
-        <Badge>{row._count?.orders ?? 0}</Badge>
-      ),
+      render: (row) => <Badge>{row._count?.orders ?? 0}</Badge>,
     },
     // ...
   ]}
@@ -517,7 +519,7 @@ A Forge não toca em arquivos que ela não gerou. Liberdade total.
 ## Estrutura final do frontend gerado
 
 ```
-apps/web/
+templates/starter/apps/web/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx
@@ -577,7 +579,7 @@ pnpm openapi-ts && pnpm forge:generate:frontend --types-only
 
 ## Customizando os templates Handlebars do frontend
 
-Templates ficam em `packages/generators/src/frontend/templates/`:
+Templates ficam em `tools/generators/forge-page/templates/`:
 
 - `list-page.hbs`
 - `create-page.hbs`

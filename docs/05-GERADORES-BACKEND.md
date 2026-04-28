@@ -176,7 +176,7 @@ export class BaseClientService {
 
 O `prisma-crud-generator` não gera controllers — gera só services. A Forge tem seu próprio gerador pra controllers e modules.
 
-Esse gerador vive em `packages/generators/src/backend/` e usa templates Handlebars.
+Esse gerador vive em `tools/generators/forge-controller/` e usa templates Handlebars.
 
 ### Comando
 
@@ -192,7 +192,7 @@ Esse comando lê o `schema.prisma`, identifica os models, e gera pra cada um:
 
 ### Template do controller
 
-`packages/generators/src/backend/templates/controller.hbs`:
+`tools/generators/forge-controller/templates/controller.hbs`:
 
 ```handlebars
 import {
@@ -280,43 +280,37 @@ export class {{pascalCase name}}Controller {
 
 ### Template do service (wrapper)
 
-`packages/generators/src/backend/templates/service.hbs`:
+`tools/generators/forge-controller/templates/service.hbs`:
 
 ```handlebars
-import { Injectable } from "@nestjs/common";
-import { Base{{pascalCase name}}Service } from "../../generated/services/{{kebabCase name}}/{{kebabCase name}}.base.service";
-
-@Injectable()
-export class {{pascalCase name}}Service extends Base{{pascalCase name}}Service {
-  // Adicione aqui suas customizações.
-  // Exemplo:
-  // async create(data: Create{{pascalCase name}}Dto & { tenantId: string }, userId: string) {
-  //   const result = await super.create(data);
-  //   await this.notifications.send(userId, "Cliente criado");
-  //   return result;
-  // }
-}
+import { Injectable } from "@nestjs/common"; import { Base{{pascalCase
+  name
+}}Service } from "../../generated/services/{{kebabCase name}}/{{kebabCase
+  name
+}}.base.service"; @Injectable() export class
+{{pascalCase name}}Service extends Base{{pascalCase name}}Service { // Adicione
+aqui suas customizações. // Exemplo: // async create(data: Create{{pascalCase
+  name
+}}Dto & { tenantId: string }, userId: string) { // const result = await
+super.create(data); // await this.notifications.send(userId, "Cliente criado");
+// return result; // } }
 ```
 
 Esse arquivo é gerado **uma vez** (não sobrescrito em regenerações). Você edita à vontade.
 
 ### Template do module
 
-`packages/generators/src/backend/templates/module.hbs`:
+`tools/generators/forge-controller/templates/module.hbs`:
 
 ```handlebars
-import { Module } from "@nestjs/common";
-import { PrismaModule } from "../../prisma/prisma.module";
-import { {{pascalCase name}}Service } from "./{{kebabCase name}}.service";
-import { {{pascalCase name}}Controller } from "./{{kebabCase name}}.controller";
-
-@Module({
-  imports: [PrismaModule],
-  controllers: [{{pascalCase name}}Controller],
-  providers: [{{pascalCase name}}Service],
-  exports: [{{pascalCase name}}Service],
-})
-export class {{pascalCase name}}Module {}
+import { Module } from "@nestjs/common"; import { PrismaModule } from
+"../../prisma/prisma.module"; import {
+{{pascalCase name}}Service } from "./{{kebabCase name}}.service"; import {
+{{pascalCase name}}Controller } from "./{{kebabCase name}}.controller";
+@Module({ imports: [PrismaModule], controllers: [{{pascalCase name}}Controller],
+providers: [{{pascalCase name}}Service], exports: [{{pascalCase name}}Service],
+}) export class
+{{pascalCase name}}Module {}
 ```
 
 ### Template do app.module (atualização automática)
@@ -391,10 +385,7 @@ export class ClientController extends BaseClientController {
   // Adicione novos endpoints à vontade
   @Get(":id/orders")
   @ApiOperation({ summary: "List orders for a client" })
-  async listOrders(
-    @Param("id") id: string,
-    @CurrentTenant() tenantId: string,
-  ) {
+  async listOrders(@Param("id") id: string, @CurrentTenant() tenantId: string) {
     return this.service.listOrders(id, tenantId);
   }
 }
@@ -560,7 +551,7 @@ export function withEncryption(prisma: PrismaClient) {
 Após `pnpm forge:generate:backend` rodar pra um projeto com 5 models:
 
 ```
-apps/api/
+templates/starter/apps/api/
 ├── src/
 │   ├── main.ts
 │   ├── app.module.ts                # com markers AUTOGEN
@@ -617,7 +608,7 @@ pnpm forge:generate:backend --skip-prisma
 
 ## Customizando os templates Handlebars
 
-Se você quiser mudar o padrão de geração (ex: adicionar audit log automático em todos os endpoints), edite os templates em `packages/generators/src/backend/templates/`.
+Se você quiser mudar o padrão de geração (ex: adicionar audit log automático em todos os endpoints), edite os templates em `tools/generators/forge-controller/templates/`.
 
 Como os templates ficam no monorepo da Forge, mudanças neles afetam projetos novos. Projetos existentes ficam com a versão antiga até você rodar `pnpm forge:generate:backend` neles.
 
@@ -642,7 +633,7 @@ Pra esses casos, ignore a geração e crie módulos manuais. A Forge não força
 
 1. Dev edita `schema.prisma`, adiciona model `Order`
 2. Roda `pnpm prisma migrate dev --name add_orders` → migration aplicada no DB
-3. Roda `pnpm forge:generate:backend` → 
+3. Roda `pnpm forge:generate:backend` →
    - Prisma generate cria DTOs e BaseOrderService
    - Forge generator cria OrderController, OrderService, OrderModule
    - app.module.ts é atualizado entre markers
