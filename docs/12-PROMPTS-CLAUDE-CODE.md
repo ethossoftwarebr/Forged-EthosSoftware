@@ -76,18 +76,26 @@ seguindo exatamente a estrutura de pastas definida em 03-ESTRUTURA-MONOREPO.md.
 2. Criar pnpm-workspace.yaml apontando para apps/* e packages/*
 3. Criar turbo.json com pipelines: build, dev, lint, test, typecheck, clean
 4. Criar tsconfig.base.json na raiz com configs estritas (strict: true, noUncheckedIndexedAccess: true)
-5. Criar a árvore de pastas:
-   - apps/api/ (placeholder)
-   - apps/web/ (placeholder)
+5. Criar a árvore de pastas (15 packages: 7 infra + 8 plugáveis):
+   - apps/playground/ (placeholder — Next.js vitrine viva)
    - packages/ui/
-   - packages/database/
    - packages/auth/
+   - packages/database/
+   - packages/api-base/
    - packages/config/
    - packages/types/
    - packages/utils/
-   - tools/generators/
-   - templates/starter/ (placeholder)
-   - docs/ (mover os .md atuais pra cá se ainda não estiverem)
+   - packages/ai-chat/
+   - packages/ai-rag/
+   - packages/ocr/
+   - packages/whatsapp/
+   - packages/google/
+   - packages/n8n/
+   - packages/payments/
+   - packages/erp-bridge/
+   - tools/generators/ (skeleton — fora do workspace pnpm)
+   - templates/starter/ (placeholder; templates/starter/apps/{api,web}/ preenchidos nos prompts #7-#11)
+   - docs/ (já populado)
 6. Criar .gitignore robusto (node_modules, dist, .next, .turbo, .env*, etc.)
 7. Criar .nvmrc com Node 20
 8. Criar README.md raiz com instruções de bootstrap
@@ -105,7 +113,8 @@ seguindo exatamente a estrutura de pastas definida em 03-ESTRUTURA-MONOREPO.md.
 [NÃO FAZER]
 - Não instalar Lerna, Nx, Rush ou qualquer outro monorepo tool
 - Não usar yarn ou npm
-- Não criar conteúdo dentro de apps/api ou apps/web ainda — só placeholders
+- Não criar apps/api ou apps/web no Forge — esses apps vivem em templates/starter/apps/ (preenchidos nos prompts #7-#11)
+- Não popular templates/starter/apps/ ainda — só placeholder
 ```
 
 ---
@@ -463,11 +472,12 @@ Leia:
 - 05-GERADORES-BACKEND.md (estrutura esperada do app)
 
 [OBJETIVO]
-Inicializar apps/api/ como aplicação NestJS 10 + Prisma 5 + PostgreSQL,
-seguindo a estrutura modular esperada e as configurações de produção.
+Inicializar templates/starter/apps/api/ como aplicação NestJS 10 + Prisma 5 + PostgreSQL,
+seguindo a estrutura modular esperada e as configurações de produção. Esse é o
+app de referência que todo projeto cliente clona via templates/starter/.
 
 [TAREFAS]
-1. Inicializar apps/api/ com NestJS CLI ou manualmente:
+1. Inicializar templates/starter/apps/api/ com NestJS CLI ou manualmente:
    - package.json com nome @ethos-app/api
    - main.ts, app.module.ts
    - Estrutura: src/modules/, src/common/, src/config/, src/lib/
@@ -514,7 +524,7 @@ seguindo a estrutura modular esperada e as configurações de produção.
     - db:generate, db:migrate, db:studio, db:seed (placeholder)
 
 [CRITÉRIO DE ACEITE]
-- `pnpm --filter @ethos-app/api dev` sobe a API em :3001
+- `pnpm --filter @ethos-app/api dev` sobe a API em :3001 (rodando a partir de templates/starter/apps/api/)
 - GET /health retorna 200
 - GET /api-docs abre Swagger funcional
 - Validação Zod de env falha no startup se env inválida
@@ -555,7 +565,7 @@ Esse é o coração do kit — todos os produtos vão herdar isso.
    - Helpers de JWT (sign + verify)
    - Tudo exportado pra ser usado pelo backend
 
-3. Módulo AuthModule (em apps/api/src/modules/auth/):
+3. Módulo AuthModule (em templates/starter/apps/api/src/modules/auth/):
    - auth.controller.ts (POST /auth/register, /auth/login, /auth/refresh,
      /auth/logout, GET /auth/me)
    - auth.service.ts (lógica de autenticação)
@@ -634,14 +644,14 @@ dev cria ClientService extends BaseClientService quando precisa customizar.
    - Instalar @prisma-utils/prisma-crud-generator
    - Configurar generators no schema.prisma:
      - generator client (default)
-     - generator nestjsDto (output: ../../apps/api/src/generated/dto)
-     - generator nestjsCrud (output: ../../apps/api/src/generated/crud)
+     - generator nestjsDto (output: ../../templates/starter/apps/api/src/generated/dto)
+     - generator nestjsCrud (output: ../../templates/starter/apps/api/src/generated/crud)
 
 2. Em tools/generators/:
    - Criar tools/generators/forge-controller/ (CLI Node)
    - Lê schema.prisma via @prisma/internals
    - Pra cada model marcado com /// @forge.generate(controller):
-     gera controller.ts e module.ts em apps/api/src/modules/<resource>/
+     gera controller.ts e module.ts em templates/starter/apps/api/src/modules/<resource>/
    - Templates Handlebars conforme doc 05
    - Não sobrescreve service.ts se já existir (Modelo B preserva customização)
    - Cria service.ts inicial extends BaseClientService se não existir
@@ -666,10 +676,10 @@ dev cria ClientService extends BaseClientService quando precisa customizar.
 6. Adicionar 1 model de exemplo no schema (ex: Product) com /// @forge.generate(controller, page)
 
 7. Rodar `pnpm forge:gen:backend` e validar:
-   - DTOs gerados em apps/api/src/generated/dto/
-   - BaseClientService gerado em apps/api/src/generated/crud/
+   - DTOs gerados em templates/starter/apps/api/src/generated/dto/
+   - BaseClientService gerado em templates/starter/apps/api/src/generated/crud/
    - controller.ts, module.ts, service.ts, repository.ts gerados em
-     apps/api/src/modules/products/
+     templates/starter/apps/api/src/modules/products/
    - Module registrado em app.module.ts (manualmente por enquanto — automação em V2)
    - Endpoints CRUD funcionais via Swagger
 
@@ -701,15 +711,15 @@ Leia:
 - 07-AUTH-MULTI-TENANT.md (fluxo de auth no frontend)
 
 [OBJETIVO]
-Inicializar apps/web/ como Next.js 14 App Router + TypeScript + Tailwind,
+Inicializar templates/starter/apps/web/ como Next.js 14 App Router + TypeScript + Tailwind,
 consumindo @ethos/ui, com auth integrado e estrutura pronta pra receber
-páginas geradas.
+páginas geradas. Esse é o app de referência que todo projeto cliente clona via templates/starter/.
 
 [TAREFAS]
-1. Inicializar apps/web/:
+1. Inicializar templates/starter/apps/web/:
    - Next.js 14 App Router (npx create-next-app@latest --ts --tailwind --app)
    - Renomear pra @ethos-app/web
-   - Configurar tsconfig extending packages/config/tsconfig.nextjs.json
+   - Configurar tsconfig extending @ethos/config/tsconfig/nextjs.json
 2. Tailwind:
    - Importar preset de @ethos/ui (tailwind.config baseado no preset)
    - Importar globals.css de @ethos/ui em app/layout.tsx
@@ -786,7 +796,7 @@ types/hooks + templates Forge pra páginas (list/create/edit/view) +
 atualização automática do sidebar config.
 
 [TAREFAS]
-1. Configurar @hey-api/openapi-ts em apps/web/:
+1. Configurar @hey-api/openapi-ts em templates/starter/apps/web/:
    - npm i @hey-api/openapi-ts -D
    - openapi-ts.config.ts apontando pra http://localhost:3001/api-docs-json
    - Output em src/generated/api/

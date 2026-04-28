@@ -65,12 +65,15 @@ ethos-forge/
 ├── CLAUDE.md                  ← Você está aqui
 ├── docs/                      ← Documentação detalhada (ler sob demanda)
 ├── apps/
-│   ├── api/                   ← NestJS API (referência)
-│   └── web/                   ← Next.js Web (referência)
-├── packages/
+│   └── playground/            ← Next.js vitrine viva — importa todos os packages, NÃO deployado
+├── packages/                  ← 7 infra + 8 plugáveis = 15 packages
 │   ├── ui/                    ← @ethos/ui — biblioteca proprietária de componentes
 │   ├── auth/                  ← @ethos/auth — tipos e helpers de auth
-│   ├── database/              ← @ethos/database — schema Prisma + client
+│   ├── database/              ← @ethos/database — Prisma client wrapper + tipos do schema
+│   ├── api-base/              ← @ethos/api-base — módulos NestJS reutilizáveis (multi-tenant, audit, exception filters)
+│   ├── config/                ← @ethos/config — tsconfig, eslint, tailwind preset
+│   ├── types/                 ← @ethos/types — tipos compartilhados
+│   ├── utils/                 ← @ethos/utils — helpers genéricos
 │   ├── ai-chat/               ← @ethos/ai-chat — chat com Claude + tools
 │   ├── ai-rag/                ← @ethos/ai-rag — RAG com pgvector
 │   ├── ocr/                   ← @ethos/ocr — extração via Claude vision
@@ -78,16 +81,16 @@ ethos-forge/
 │   ├── google/                ← @ethos/google — Calendar, Drive, Sheets
 │   ├── n8n/                   ← @ethos/n8n — wrapper de workflows
 │   ├── payments/              ← @ethos/payments — MP + Stripe + PagSeguro
-│   ├── erp-bridge/            ← @ethos/erp-bridge — Bling + Tiny + Omie
-│   ├── config/                ← @ethos/config — tsconfig, eslint, tailwind preset
-│   ├── types/                 ← @ethos/types — tipos compartilhados
-│   └── utils/                 ← @ethos/utils — helpers genéricos
+│   └── erp-bridge/            ← @ethos/erp-bridge — Bling + Tiny + Omie
 ├── tools/
-│   └── generators/
+│   └── generators/            ← Geradores Forge (não publicáveis — fora do workspace pnpm)
 │       ├── forge-controller/  ← Gerador de controllers/modules NestJS
 │       └── forge-page/        ← Gerador de páginas Next.js
 └── templates/
     └── starter/               ← Template clonável de novo projeto
+        └── apps/
+            ├── api/           ← NestJS deployável (referência) — preenchido nos prompts #7-#9
+            └── web/           ← Next.js deployável (referência) — preenchido nos prompts #10-#11
 ```
 
 Detalhes em `docs/03-ESTRUTURA-MONOREPO.md`.
@@ -182,7 +185,8 @@ pnpm dev
 
 # Dev só de um package
 pnpm --filter @ethos/ui dev
-pnpm --filter @ethos-app/api dev
+pnpm playground                                # apps/playground (vitrine viva)
+pnpm --filter @ethos-app/api dev               # API do starter (em templates/starter/apps/api/)
 
 # Geradores
 pnpm forge:gen:backend       # Roda Prisma generators + Forge controller gen

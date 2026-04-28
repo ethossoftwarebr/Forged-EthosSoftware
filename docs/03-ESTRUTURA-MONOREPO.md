@@ -16,9 +16,14 @@ A Forge é um monorepo `Turborepo + pnpm workspaces` com três tipos de pasta:
 ethos-forge/
 ├── apps/
 │   └── playground/                # App Next.js que usa todos os packages
-├── packages/
+├── packages/                      # 7 infra + 8 plugáveis = 15 packages
 │   ├── ui/                        # @ethos/ui — componentes proprietários
+│   ├── auth/                      # @ethos/auth — auth multi-tenant
+│   ├── database/                  # @ethos/database — Prisma client wrapper + tipos do schema
 │   ├── api-base/                  # @ethos/api-base — módulos NestJS reutilizáveis
+│   ├── config/                    # @ethos/config — tsconfig, eslint, tailwind preset
+│   ├── types/                     # @ethos/types — types compartilhados
+│   ├── utils/                     # @ethos/utils — funções utilitárias
 │   ├── ai-chat/                   # @ethos/ai-chat
 │   ├── ai-rag/                    # @ethos/ai-rag
 │   ├── ocr/                       # @ethos/ocr
@@ -26,14 +31,14 @@ ethos-forge/
 │   ├── google/                    # @ethos/google
 │   ├── n8n/                       # @ethos/n8n
 │   ├── payments/                  # @ethos/payments
-│   ├── erp-bridge/                # @ethos/erp-bridge
-│   ├── auth/                      # @ethos/auth — auth multi-tenant
-│   ├── types/                     # @ethos/types — types compartilhados
-│   ├── utils/                     # @ethos/utils — funções utilitárias
-│   ├── config/                    # @ethos/config — tsconfig, eslint, tailwind preset
-│   └── generators/                # @ethos/generators — templates handlebars dos geradores
+│   └── erp-bridge/                # @ethos/erp-bridge
+├── tools/
+│   └── generators/                # Geradores Forge (Handlebars + scripts) — não publicáveis, fora do workspace pnpm
 ├── templates/
 │   └── starter/                   # Template clonável de novo projeto cliente
+│       └── apps/
+│           ├── api/               # NestJS deployável (preenchido nos prompts #7-#9)
+│           └── web/               # Next.js deployável (preenchido nos prompts #10-#11)
 ├── docs/                          # Documentação técnica (esses .md)
 ├── .github/
 │   └── workflows/
@@ -185,10 +190,34 @@ packages/api-base/
 Pacote dedicado a autenticação multi-tenant. Funciona junto com `api-base/auth/` — `auth/` é o pacote standalone e re-exporta o módulo Nest.
 
 Inclui:
-- Schemas Prisma de User, Tenant, Session, RefreshToken
 - Hooks React (`useAuth`, `useUser`, `useTenant`)
 - Componentes (`<LoginForm>`, `<RegisterForm>`, `<TenantSwitcher>`)
 - Middleware Next.js pra rotas protegidas
+- Helpers de hash (argon2id) e JWT
+
+> Os **schemas Prisma** (User, Tenant, Session, RefreshToken) ficam em `@ethos/database` (fonte única do schema), não aqui. `@ethos/auth` consome os tipos derivados.
+
+### `packages/database/`
+
+Wrapper do Prisma client + schema central + tipos derivados. Fonte única de verdade do banco para todos os apps e packages.
+
+```
+packages/database/
+├── prisma/
+│   └── schema.prisma              # Schema central (Tenant, User, Session, etc.)
+├── src/
+│   ├── client.ts                  # PrismaClient instance + tenant filtering extension
+│   ├── tenant-context.ts          # AsyncLocalStorage do tenantId
+│   ├── types.ts                   # Re-exports dos tipos do @prisma/client
+│   └── index.ts
+├── package.json
+└── tsconfig.json
+```
+
+Por que isolar do `api-base/`:
+- `database/` é consumível tanto pelo backend NestJS quanto por scripts (seed, migrations CLI)
+- Schema fica versionado em um único lugar — projetos cliente herdam via dependency
+- Geradores backend (em `tools/generators/`) leem `prisma/schema.prisma` deste pacote
 
 ### `packages/ai-chat/`, `packages/ai-rag/`, etc.
 
@@ -269,28 +298,30 @@ packages/config/
 └── package.json
 ```
 
-### `packages/generators/`
+### `tools/generators/`
 
-Templates Handlebars próprios da Forge — controllers NestJS e páginas Next.js.
+Templates Handlebars próprios da Forge — controllers NestJS e páginas Next.js. **Não publicáveis como package** (não são consumíveis em runtime — só rodam via CLI). Por isso ficam em `tools/`, fora do workspace pnpm.
 
 ```
-packages/generators/
-├── src/
-│   ├── backend/
-│   │   ├── controller.hbs         # Template do controller
-│   │   ├── module.hbs             # Template do module
-│   │   └── generate-backend.ts    # Script que orquestra
-│   ├── frontend/
-│   │   ├── list-page.hbs          # Página de lista
-│   │   ├── create-page.hbs        # Página de criação
-│   │   ├── edit-page.hbs          # Página de edição
-│   │   ├── view-page.hbs          # Página de visualização
-│   │   └── generate-frontend.ts
+tools/generators/
+├── forge-controller/              # Gera controllers + modules NestJS
+│   ├── templates/
+│   │   ├── controller.hbs
+│   │   ├── module.hbs
+│   │   └── service.hbs
 │   ├── helpers/                   # Handlebars helpers (camelCase, plural, etc)
-│   └── index.ts
-├── package.json
-└── tsconfig.json
+│   └── index.js                   # CLI Node — roda via `pnpm forge:gen:backend`
+└── forge-page/                    # Gera páginas Next.js
+    ├── templates/
+    │   ├── list-page.hbs
+    │   ├── create-page.hbs
+    │   ├── edit-page.hbs
+    │   └── view-page.hbs
+    ├── icon-map.ts                # Heurística Lucide por nome de model
+    └── index.js                   # CLI Node — roda via `pnpm forge:gen:frontend`
 ```
+
+Convenção: `tools/` é pra ferramentas internas não-publicáveis. `packages/` só pra código consumível como dependency. Se um gerador virar package versionável no futuro, migra pra `packages/`.
 
 Detalhes em **`05-GERADORES-BACKEND.md`** e **`06-GERADORES-FRONTEND.md`**.
 
@@ -365,11 +396,13 @@ packages:
 
 ### `turbo.json`
 
+> Schema Turbo 2.x: usa `"tasks"` (a chave era `"pipeline"` na 1.x — Turbo 2 quebra com a chave antiga).
+
 ```json
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
