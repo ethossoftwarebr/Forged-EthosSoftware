@@ -3,6 +3,7 @@
 > Este arquivo é **operacional**. Cada seção contém um prompt pronto para colar no Claude Code, com os arquivos de contexto que ele deve ler antes de executar a tarefa.
 >
 > **Como usar:**
+>
 > 1. Abre o Claude Code dentro do monorepo `forge/`.
 > 2. Copia o prompt da seção que você está atacando.
 > 3. Cola no Claude Code. Ele vai ler os `.md` referenciados, planejar e executar.
@@ -134,46 +135,105 @@ Configurar ESLint, Prettier, Husky, lint-staged, commitlint e CI básico
 no monorepo Forge.
 
 [TAREFAS]
-1. ESLint:
-   - Instalar @typescript-eslint, eslint-config-next, eslint-plugin-react,
-     eslint-plugin-react-hooks, eslint-plugin-import
-   - Criar packages/config/eslint-base.js (regras compartilhadas)
-   - Criar packages/config/eslint-nextjs.js (extends base + Next)
-   - Criar packages/config/eslint-node.js (extends base + Node)
-   - Criar .eslintrc.js raiz que extende a base
-2. Prettier:
-   - Instalar prettier, prettier-plugin-tailwindcss
-   - Criar .prettierrc na raiz com configs (semi: true, singleQuote: true,
+1. ESLint 9 (flat config):
+   - Instalar typescript-eslint@^8, @eslint/js@^9, @eslint/eslintrc@^3,
+     eslint-config-next@^14, eslint-plugin-react-hooks@^5,
+     eslint-plugin-import@^2, eslint-import-resolver-typescript@^3,
+     globals@^15
+   - Criar packages/config/eslint/base.mjs (TS + import + globals ES2022,
+     sem regras de framework)
+   - Criar packages/config/eslint/nextjs.mjs (extends base + FlatCompat
+     com next/core-web-vitals + next/typescript + react-hooks plugin)
+   - Criar packages/config/eslint/node.mjs (extends base + globals.node)
+   - Criar eslint.config.mjs raiz que importa @ethos/config/eslint/base.mjs
+     + bloco override `**/*.config.{js,cjs}` com sourceType: 'commonjs' +
+     globals.node + bloco final com ignores monorepo-wide
+   - Adicionar `"@ethos/config": "workspace:*"` em devDependencies do
+     package.json raiz (obrigatório pra ESM resolver `import '@ethos/config/eslint/base.mjs'`)
+2. Prettier 3:
+   - Instalar prettier@^3, prettier-plugin-tailwindcss@^0.6
+   - Criar .prettierrc na raiz (semi: true, singleQuote: true,
      trailingComma: 'all', printWidth: 100, plugins: tailwind)
-   - Criar .prettierignore
-3. Husky + lint-staged:
-   - Instalar husky, lint-staged
-   - Configurar pre-commit: lint-staged
-   - lint-staged config: ESLint --fix + Prettier --write
+   - Criar .prettierignore (node_modules, dist, .next, .turbo, coverage,
+     pnpm-lock.yaml, **/generated)
+3. Husky 9 + lint-staged:
+   - Instalar husky@^9, lint-staged@^15
+   - Adicionar `"prepare": "husky"` ao package.json raiz (Husky 9 simplified —
+     SEM `husky install`, SEM shebang nos hooks, SEM `chmod +x`)
+   - Sobrescrever .husky/pre-commit (linha única): `pnpm exec lint-staged`
+   - Criar .husky/commit-msg (linha única): `pnpm exec commitlint --edit "$1"`
+   - Criar lint-staged.config.js (CJS — root sem `"type": "module"`):
+     `*.{ts,tsx,mjs,cjs,js}` → ['eslint --fix', 'prettier --write']
+     `*.{md,json,yaml,yml}` → ['prettier --write']
 4. Commitlint:
-   - Instalar @commitlint/cli, @commitlint/config-conventional
-   - Criar commitlint.config.js (conventional commits)
-   - Configurar commit-msg hook
+   - Instalar @commitlint/cli@^19, @commitlint/config-conventional@^19
+   - Criar commitlint.config.js (CJS): `module.exports = { extends: ['@commitlint/config-conventional'] }`
 5. CI (GitHub Actions):
    - Criar .github/workflows/ci.yml
-   - Jobs: install, lint, typecheck, test, build
-   - Cache pnpm e turbo
-   - Rodar em PR e push pra main
-6. Adicionar scripts úteis no package.json raiz:
+   - Trigger: pull_request + push em main
+   - Job único `quality` (matrix Node 20):
+     actions/checkout@v4 → pnpm/action-setup@v4 (version: 9) →
+     actions/setup-node@v4 (cache: 'pnpm') → actions/cache@v4 (path .turbo,
+     key hashFiles('pnpm-lock.yaml')) → pnpm install --frozen-lockfile →
+     pnpm lint → pnpm typecheck → pnpm test → pnpm build
+   - permissions: { contents: read } (least privilege)
+6. Adicionar scripts úteis no package.json raiz (se faltarem):
    - "lint": "turbo run lint"
    - "typecheck": "turbo run typecheck"
    - "test": "turbo run test"
-   - "format": "prettier --write \"**/*.{ts,tsx,md}\""
+   - "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\""
+7. .gitattributes raiz: `* text=auto eol=lf` (apenas prospectivo).
+   Normalização retroativa via `git add --renormalize .` em commit
+   dedicado, fora deste prompt.
 
 [CRITÉRIO DE ACEITE]
-- `pnpm lint` roda sem erro num repo vazio
-- Commit com mensagem inválida é bloqueado
-- Pre-commit formata arquivos staged
-- CI passa no primeiro PR
+- `pnpm install` resolve devDeps sem conflito; lockfile estável
+- `pnpm lint` exit 0 num repo placeholder
+- `pnpm typecheck` exit 0 (16 tasks via turbo)
+- Commit com mensagem inválida → exit ≠ 0 (commitlint bloqueia)
+- Commit Conventional → exit 0; pre-commit roda lint-staged sem regredir
+- `.github/workflows/ci.yml` parseia como YAML válido
+  (validar local: `pnpm dlx js-yaml@4 .github/workflows/ci.yml`)
+- `git check-attr text -- .prettierrc` retorna `text: auto`
 
 [NÃO FAZER]
-- Não usar Biome (decisão tomada por ESLint+Prettier)
-- Não criar configs duplicadas em cada package — sempre extender de packages/config
+- Não usar Biome (decisão: ESLint + Prettier)
+- Não usar `.eslintrc.js` legacy — ESLint 9 flat config é o padrão
+- Não usar Husky <9 (legado pedia `husky install` + shebang + chmod)
+- Não criar configs duplicadas em cada package — sempre extender de
+  @ethos/config/eslint/{base,nextjs,node}.mjs
+
+[NOTAS TÉCNICAS — atualizadas em 2026-04-28 após implementação]
+- **`workspace:*` obrigatório no root.** Sem `"@ethos/config": "workspace:*"`
+  em devDependencies do package.json raiz, o `eslint.config.mjs` raiz não
+  consegue fazer `import '@ethos/config/eslint/base.mjs'` — pnpm só linka
+  workspace packages que estão declarados como dep do consumer. O hook
+  pre-commit (lint-staged → eslint) é quem dispara o resolve real (turbo
+  run lint só roda echo placeholder nas packages, então não exercita esse
+  caminho).
+- **Override `**/*.config.{js,cjs}` é necessário.** ESLint 9 flat config
+  não detecta automaticamente que arquivos `*.config.js` na raiz são CJS
+  (root sem `"type": "module"`). Sem o override com `sourceType: 'commonjs'`
+  + `globals: globals.node`, ESLint reclama `'module' is not defined` em
+  `commitlint.config.js` e `lint-staged.config.js`. Solução adotada:
+  bloco override no `eslint.config.mjs` raiz, antes do bloco `ignores`.
+- **Coexistência ESM/CJS é deliberada.** Presets ESLint em `@ethos/config`
+  são ESM (`.mjs` + `export default`) — alinha com a direção da comunidade
+  ESLint 9 e permite top-level await futuro. Já os configs de tooling na
+  raiz (`commitlint.config.js`, `lint-staged.config.js`) ficam CJS
+  (`module.exports`) porque commitlint/lint-staged carregam via `require()`
+  síncrono e migrar implicaria adicionar `"type": "module"` no package.json
+  raiz — mudança de blast radius alto que trava decisões de toda a Forge.
+- **`eslint-config-next@^14` ainda exige FlatCompat.** Em abril/2026 o
+  `eslint-config-next` continua publicando apenas o legacy config (`.eslintrc`
+  shape), sem export flat nativo. Em `nextjs.mjs` é consumido via
+  `new FlatCompat({ baseDirectory: import.meta.dirname }).extends('next/core-web-vitals', 'next/typescript')`.
+  Isso é **compat layer temporário**, não pattern definitivo — quando o
+  pacote shipar flat config nativo (provavelmente alinhado ao Next 15+),
+  remover `@eslint/eslintrc` + FlatCompat e consumir direto. O mesmo se
+  aplica a `eslint-plugin-react-hooks@^5`, ainda sem flat export — wired
+  manualmente via `plugins: { 'react-hooks': reactHooksPlugin }` +
+  `rules: { ...reactHooksPlugin.configs.recommended.rules }`.
 ```
 
 ---
@@ -1366,25 +1426,31 @@ Ao longo da construção do Forge, você vai descobrir prompts que funcionam par
 ## Anti-padrões a evitar nos prompts
 
 ❌ **Vago demais:**
+
 > "Crie a biblioteca de UI"
 
 ✅ **Específico:**
+
 > "Implemente os 5 primitivos do Grupo A (Label, Textarea, Select, Checkbox, Radio) seguindo o doc 04, usando Radix UI quando aplicável, com stories no Storybook"
 
 ---
 
 ❌ **Sem critério de aceite:**
+
 > "Faça funcionar"
 
 ✅ **Mensurável:**
+
 > "Critério de aceite: pnpm --filter ui storybook abre, todos os 5 primitivos catalogados, navegação por teclado funciona em Select e Radio"
 
 ---
 
 ❌ **Sem bordas:**
+
 > "Implemente auth"
 
 ✅ **Com bordas:**
+
 > "Implemente auth conforme doc 07. NÃO usar bcrypt (argon2id). NÃO armazenar JWT em localStorage. NÃO permitir tenantId vir do body."
 
 ---
