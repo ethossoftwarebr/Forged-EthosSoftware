@@ -206,6 +206,9 @@ importers:
       '@storybook/addon-themes':
         specifier: ^8.0.0
         version: 8.6.18(storybook@8.6.18(prettier@3.8.3))
+      '@storybook/react':
+        specifier: ^8.0.0
+        version: 8.6.18(@storybook/test@8.6.18(storybook@8.6.18(prettier@3.8.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.18(prettier@3.8.3))(typescript@5.9.3)
       '@storybook/react-vite':
         specifier: ^8.0.0
         version: 8.6.18(@storybook/test@8.6.18(storybook@8.6.18(prettier@3.8.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.60.2)(storybook@8.6.18(prettier@3.8.3))(typescript@5.9.3)(vite@5.4.21(@types/node@20.19.39))

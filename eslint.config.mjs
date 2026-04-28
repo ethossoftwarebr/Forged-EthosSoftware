@@ -22,6 +22,7 @@ const config = [
       '**/.turbo/**',
       '**/node_modules/**',
       '**/generated/**',
+      '**/storybook-static/**',
       'pnpm-lock.yaml',
       '**/.pnpm-store/**',
       '**/coverage/**',
