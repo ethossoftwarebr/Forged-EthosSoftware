@@ -2,14 +2,18 @@
   "name": "@ethos/config",
   "version": "0.1.0",
   "private": true,
-  "description": "Configurações compartilhadas: tsconfig presets (eslint, prettier, tailwind virão no prompt #2).",
+  "description": "Configurações compartilhadas: tsconfig + eslint presets.",
   "files": [
-    "tsconfig"
+    "tsconfig",
+    "eslint"
   ],
   "exports": {
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/library.json": "./tsconfig/library.json",
     "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
-    "./tsconfig/nestjs.json": "./tsconfig/nestjs.json"
+    "./tsconfig/nestjs.json": "./tsconfig/nestjs.json",
+    "./eslint/base.mjs": "./eslint/base.mjs",
+    "./eslint/nextjs.mjs": "./eslint/nextjs.mjs",
+    "./eslint/node.mjs": "./eslint/node.mjs"
   }
 }
