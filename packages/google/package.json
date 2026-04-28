@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/google",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Integração Google plugável: Calendar, Drive, Sheets, Gmail. OAuth2 flow, refresh automático, multi-tenant tokens criptografados. Preenchido no prompt #17.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

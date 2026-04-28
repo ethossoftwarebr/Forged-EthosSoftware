@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/payments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pagamentos plugável: adapter pattern (Mercado Pago default BR + PagSeguro + Stripe). Checkout, subscriptions, webhooks. Preenchido no prompt #19.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

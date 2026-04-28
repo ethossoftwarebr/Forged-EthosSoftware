@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/whatsapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WhatsApp plugável: adapter pattern (Z-API default + WhatsApp Business API). Send/receive, webhook, multi-tenant credentials. Preenchido no prompt #16.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@ethos/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Biblioteca proprietária de componentes UI (primitivos + compostos + layouts) — preenchida nos prompts #3-#6.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "echo 'placeholder — build configurado no prompt #3'",
+    "dev": "echo 'placeholder — dev configurado no prompt #3'",
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

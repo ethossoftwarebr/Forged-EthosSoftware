@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/ocr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OCR plugável com Claude vision: extração de texto / dados estruturados de NF, RG, CPF, boletos. Preenchido no prompt #15.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

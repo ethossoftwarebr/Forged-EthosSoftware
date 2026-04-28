@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/utils",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Funções utilitárias puras: formatters, validators (CPF/CNPJ/CEP), strings, dates, numbers, crypto. Sem dependência de framework.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

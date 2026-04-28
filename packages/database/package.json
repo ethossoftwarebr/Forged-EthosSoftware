@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wrapper do Prisma client + schema central + tipos derivados. Fonte única do schema (Tenant, User, Session, etc.). Preenchido no prompt #8.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@ethos/starter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Template clonável de novo projeto cliente. Preenchido no prompt #12.",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "echo 'placeholder'"
+  }
+}

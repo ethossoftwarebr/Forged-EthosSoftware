@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/ai-chat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chat plugável com Anthropic Claude — módulo NestJS + componentes React. Tools, streaming, multi-tenant. Preenchido no prompt #13.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

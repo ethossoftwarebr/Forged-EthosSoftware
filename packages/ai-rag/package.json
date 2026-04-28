@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/ai-rag",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RAG plugável com pgvector + Anthropic Claude. Ingestão, chunking, embedding, retrieval. Preenchido no prompt #14.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}

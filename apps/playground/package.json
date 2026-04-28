@@ -1,0 +1,16 @@
+{
+  "name": "@ethos/playground",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vitrine viva da Forge. Next.js que importa todos os packages e exibe demos. NÃO deployado em produção. Populado em prompt dedicado.",
+  "scripts": {
+    "dev": "echo 'placeholder — Next.js inicializado em prompt dedicado'",
+    "build": "echo 'placeholder'",
+    "lint": "echo 'placeholder'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ethos/config": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}
