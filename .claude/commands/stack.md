@@ -8,8 +8,9 @@
 
 - Monorepo Turborepo 2.9.6 + pnpm 9 inicializado (prompt #1 concluído).
 - 17 workspaces resolvendo: 1 playground + 1 starter + 15 packages — todos placeholders.
-- `pnpm typecheck` passa (16 tasks); `docker compose config` valida YAML.
-- Próximo passo: prompt #2 (tooling) — ver `recipes.md`.
+- **Tooling configurado (prompt #2):** ESLint 9 flat (`@ethos/config/eslint/{base,nextjs,node}.mjs`) + Prettier 3 + Husky 9 + lint-staged + commitlint config-conventional + GitHub Actions CI + `.gitattributes`.
+- `pnpm install`, `pnpm lint`, `pnpm typecheck` exit 0; `docker compose config` valida YAML; CI YAML parseado válido.
+- Próximo passo: prompt #3 (UI Fundação — Button/Input/Card + tokens + Storybook 8/Vite).
 
 ## Stack canônica (resumo)
 

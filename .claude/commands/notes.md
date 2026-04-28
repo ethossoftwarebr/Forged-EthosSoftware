@@ -5,7 +5,7 @@
 > Resume artifact pra novas sessões do Claude Code. Lido automaticamente pelo agent durante pipelines; serve de baseline pra qualquer dev/sessão que pegar o projeto.
 >
 > **Atualizado:** 2026-04-28
-> **Estado:** prompt #1 (setup do monorepo) concluído + doc-sweep aplicado. Próximo: prompt #2 (tooling).
+> **Estado:** prompts #1 (setup) e #2 (tooling) concluídos e pushados. Próximo: prompt #3 (UI Fundação).
 
 ## 1. O que é o projeto
 
@@ -47,14 +47,24 @@ Documentação completa em `docs/` (14 .md) e `CLAUDE.md` na raiz. `docs/12-PROM
 11. **Mobile-first:** todo componente UI testado em 375px / 768px / 1024px / 1440px no Storybook.
 12. **`turbo.json`** usa schema Turbo 2 (`"tasks"`, não `"pipeline"`).
 
-## 4. Progresso (4 commits no main, locais)
+## 4. Progresso (commits no main, pushados em origin)
 
 ```
+03b4e5b  docs(forge): atualiza prompt #2 com aprendizados pós-implementação
+24cc033  chore(forge): adiciona workflow CI (lint+typecheck+test+build)        ← Wave 3 prompt #2
+da7cd00  chore(forge): adiciona Husky 9 + lint-staged + commitlint             ← Wave 2 prompt #2
+8a1c5c6  chore(forge): adiciona ESLint 9 flat + Prettier 3 + presets em @ethos/config  ← Wave 1 prompt #2
+00775a9  chore(claude): adiciona scan references (stack/patterns/guards/recipes)
+3815427  docs(handoff): documenta mustard como infra operacional oficial
+8bbb9a3  chore(claude): adiciona mustard slash commands infra
+4091028  chore(handoff): persiste estado do projeto pra continuidade entre sessões
 7081495  docs(forge): doc-sweep — alinha caminhos com estrutura kit-vs-template
 1dc7e98  chore(monorepo): inicializa estrutura Turborepo + pnpm + 15 packages + docker-compose
 7810d51  docs(monorepo): alinha CLAUDE.md, doc-03 e prompts com decisões de estrutura
 ca8a429  docs: documentação inicial do Forge
 ```
+
+> Nota sobre renormalize: `git add --renormalize .` rodado pós-prompt #2 retornou no-op — o repo já estava em LF. O `.gitattributes` agora garante isso prospectivamente, sem commit dedicado.
 
 ## 5. Estado atual
 
@@ -67,30 +77,45 @@ ca8a429  docs: documentação inicial do Forge
 - ✅ `pnpm typecheck` passa (16 tasks)
 - ✅ `docker compose config` valida YAML
 - ✅ Doc-sweep concluído (16 edits em docs/05, 06, 07, 11) alinhando referências de caminho com estrutura kit-vs-template
-- ⏸️ **Working tree limpo, mas sem `git push`** — todos os 4 commits são locais
+- ✅ **ESLint 9 flat + Prettier 3 + Husky 9 + lint-staged + commitlint + CI configurados (prompt #2)**
+  - Presets em `@ethos/config/eslint/{base,nextjs,node}.mjs`; raiz consome via `eslint.config.mjs` com override CJS pra `*.config.{js,cjs}`
+  - Hooks ativos: `pre-commit` roda lint-staged, `commit-msg` roda commitlint config-conventional
+  - CI em `.github/workflows/ci.yml` (matrix Node 20, cache pnpm + turbo, least privilege)
+  - 7/7 ACs validados; QA emitido no harness events log
+- ✅ Branch `main` em sync com `origin/main` (auto-push ativo)
 
-## 6. Próximo passo: prompt #2 (Configuração de tooling)
+## 6. Próximo passo: prompt #3 (Biblioteca @ethos/ui — Fundação)
 
-Escopo do prompt #2 conforme `docs/12-PROMPTS-CLAUDE-CODE.md`:
+Escopo do prompt #3 conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §3 (linhas 181+).
 
-- ESLint base em `@ethos/config/eslint-base.js` + presets `eslint-nextjs.js` e `eslint-node.js`
-- Prettier raiz (`semi: true`, `singleQuote: true`, `trailingComma: 'all'`, `printWidth: 100`) + `prettier-plugin-tailwindcss`
-- Husky + lint-staged (pre-commit: ESLint --fix + Prettier --write)
-- commitlint (Conventional Commits no commit-msg hook)
-- `.github/workflows/ci.yml` (jobs: install, lint, typecheck, test, build; cache pnpm + turbo; roda em PR e push pra main)
-- Scripts úteis no `package.json` raiz já presentes; só adicionar `format` se faltar
+**Stack visual já travada** em `docs/02-IDENTIDADE-VISUAL.md` — paleta Ethos, escalas tipográficas, espaçamento, animações 150-200ms ease-out. Não tem decisão de design pendente; é execução do que já foi decidido.
 
-**Bônus aprovado anteriormente (incluir no escopo):** `.gitattributes` com `* text=auto eol=lf` pra resolver CRLF warnings do Windows.
+**Primeira entrega (Fundação):**
 
-**Critério de aceite:** `pnpm lint` roda sem erro num repo vazio; commit com mensagem inválida bloqueado; pre-commit formata staged; CI passa em PR.
+- **Tokens** — paleta + escalas em `packages/ui/src/tokens/` (cores semânticas, raio, sombras, tipografia)
+- **3 primitivos canônicos:**
+  - `Button` (variants: primary/secondary/ghost/destructive; sizes: sm/md/lg; loading state)
+  - `Input` (com label, error state, helper text, prefix/suffix)
+  - `Card` (header, content, footer slots; elevations)
+- **Storybook 8 com Vite builder** (não Webpack) — `packages/ui/.storybook/` + stories `*.stories.tsx` por componente, viewports 375/768/1024/1440
+- **Tailwind preset** em `packages/ui/tailwind-preset.js` consumido pelos apps via `presets: [require('@ethos/ui/tailwind-preset')]`
+
+**Princípios não-negociáveis (recap):**
+
+- **Não copiar shadcn cru.** Inspiração estrutural (Radix base, slot pattern, cn() helper) é OK; estética e tokens são proprietários. Cada componente é redesenhado com paleta Ethos antes de entrar.
+- Sem CSS-in-JS (só Tailwind), sem libs UI prontas (MUI/Chakra/Mantine/Ant), animações no spec.
+- Mobile-first: cada componente testado em 375/768/1024/1440 no Storybook antes do commit.
+- TypeScript strict; `forwardRef` + `displayName` em todos os primitivos; props discriminated unions onde aplicável.
+
+**Critério de aceite:** Storybook builda local; cada primitivo tem ≥3 stories (default + variants + edge cases); `pnpm --filter @ethos/ui build` exit 0; `pnpm --filter @ethos/ui storybook` roda sem warning de viewport.
 
 ## 7. Pipeline planejado (#3 a #23)
 
 | #     | Prompt                                                                                | Status         |
 | ----- | ------------------------------------------------------------------------------------- | -------------- |
 | 1     | Setup do monorepo                                                                     | ✅ Concluído   |
-| 2     | Configuração de tooling                                                               | ⏭️ **Próximo** |
-| 3     | @ethos/ui — Fundação (Button, Input, Card + tokens)                                   | Pendente       |
+| 2     | Configuração de tooling                                                               | ✅ Concluído   |
+| 3     | @ethos/ui — Fundação (Button, Input, Card + tokens)                                   | ⏭️ **Próximo** |
 | 4     | @ethos/ui — Primitivos (~30 componentes Radix-based)                                  | Pendente       |
 | 5     | @ethos/ui — Compostos (DataTablePro, FormBuilder, KpiCard, etc.)                      | Pendente       |
 | 6     | @ethos/ui — Layouts (Dashboard, Auth, Settings)                                       | Pendente       |
@@ -123,12 +148,11 @@ Para cada prompt em `docs/12-PROMPTS-CLAUDE-CODE.md`:
 
 ## 9. Pendências conhecidas
 
-- **`git push` ainda não feito** — todos os 4 commits são locais.
 - **Doc-sweep parcial intencional:** mantidos com `apps/api/` / `apps/web/` por descreverem perspectiva de projeto cliente:
   - `docs/08-PACOTES-PLUGAVEIS.md` × 4 comments (`// apps/api/...` e `// apps/web/...`) sob "Padrão de uso em projeto cliente"
   - `docs/11-ROADMAP-CONSTRUCAO.md` L247-248 (bullets descrevendo conteúdo INTERNO de `templates/starter/`)
 - **`docs/10-DEPLOY-RAILWAY.md` intacto** — Railway deploya o starter clonado, onde `apps/api/` é root relativo do projeto cliente.
-- **CRLF warnings no Windows** — pra resolver no prompt #2 via `.gitattributes`.
+- **PR de teste do CI no GitHub** (baixa prioridade) — workflow `.github/workflows/ci.yml` foi validado localmente como YAML válido, mas o execution-real só vira evidência num PR efetivo. Disparar quando primeira branch de feature subir.
 
 ## 10. Memória local do Claude Code (auto-memory)
 

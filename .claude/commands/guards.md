@@ -38,6 +38,7 @@ Feature entra na Forge **só** se aparece em ≥3 projetos diferentes. Detalhe e
 ## Operação
 
 - Antes de entregar: rodar `pnpm lint`, `pnpm typecheck`, `pnpm test` (`CLAUDE.md` § Antes de entregar).
-- Conventional Commits obrigatórios (`feat:`, `fix:`, `chore:`, `docs:`).
+- Conventional Commits obrigatórios (`feat:`, `fix:`, `chore:`, `docs:`) — validado pelo hook `commit-msg` via commitlint config-conventional.
+- **Código que falha lint local não vai pra commit** — hook `pre-commit` roda `lint-staged` (ESLint --fix + Prettier --write) e bloqueia stage de violações que não foram auto-corrigidas. Não bypassar com `--no-verify`.
 - TypeScript strict — `any` proibido sem comentário justificando.
 - Diff revisado por humano antes de commit.
