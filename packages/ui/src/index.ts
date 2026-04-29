@@ -116,3 +116,36 @@ export {
   ContextMenuShortcut,
 } from './components/ContextMenu';
 export { DatePicker, type DatePickerProps } from './components/DatePicker';
+
+// Wave 4 — GRUPO D: Navegação
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/Tabs';
+export {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
+  BreadcrumbPage,
+  BreadcrumbEllipsis,
+} from './components/Breadcrumb';
+export {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+  type PaginationLinkProps,
+} from './components/Pagination';
+export {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandSeparator,
+  CommandShortcut,
+} from './components/Command';
