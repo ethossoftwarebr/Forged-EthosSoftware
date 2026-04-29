@@ -44,3 +44,11 @@ export {
   type FormFieldProps,
   type FormFieldLabelProps,
 } from './components/FormField';
+
+// Wave 2 — GRUPO B: Feedback
+export { Alert, AlertTitle, AlertDescription, type AlertProps } from './components/Alert';
+export { Badge, badgeVariants, type BadgeProps } from './components/Badge';
+export { Toaster, toast, type ToasterProps } from './components/Toast';
+export { Skeleton } from './components/Skeleton';
+export { Spinner, type SpinnerProps } from './components/Spinner';
+export { Progress } from './components/Progress';
