@@ -4,8 +4,8 @@
 
 > Resume artifact pra novas sessões do Claude Code. Lido automaticamente pelo agent durante pipelines; serve de baseline pra qualquer dev/sessão que pegar o projeto.
 >
-> **Atualizado:** 2026-04-28
-> **Estado:** prompts #1 (setup), #2 (tooling) e #3 (`@ethos/ui` fundação) concluídos e pushados. Próximo: prompt #4 (`@ethos/ui` — primitivos Radix-based).
+> **Atualizado:** 2026-04-29
+> **Estado:** prompts #1 (setup), #2 (tooling), #3 (`@ethos/ui` fundação) e **#4 (`@ethos/ui` primitivos — 32 componentes Radix-based)** concluídos e pushados. Próximo: prompt #5 (`@ethos/ui` compostos — DataTablePro, FormBuilder, KpiCard, ConfirmDialog, etc.).
 
 ## 1. O que é o projeto
 
@@ -50,6 +50,12 @@ Documentação completa em `docs/` (14 .md) e `CLAUDE.md` na raiz. `docs/12-PROM
 ## 4. Progresso (commits no main, pushados em origin)
 
 ```
+e28c4ea  feat(ui): primitivos do grupo Estrutura no @ethos/ui (wave 5 — fim do prompt #4)
+280a2cc  feat(ui): primitivos do grupo Navegacao no @ethos/ui (wave 4)
+9796ce6  feat(ui): primitivos do grupo Overlays + DatePicker no @ethos/ui (wave 3)
+9cea7c5  feat(ui): primitivos do grupo Feedback no @ethos/ui (wave 2 do prompt #4)
+3e1f64d  feat(ui): primitivos do grupo Forms no @ethos/ui (wave 1 do prompt #4)
+d0d9938  docs(handoff): atualiza notes apos prompt #3 (@ethos/ui fundacao)
 44dfee6  feat(ui): storybook 8 + stories de primitivas (button, input, card)   ← Wave 3 prompt #3
 9970b0d  feat(ui): primitivas Button, Input e Card no @ethos/ui                ← Wave 2 prompt #3
 b989d31  chore(ui): bootstrap @ethos/ui (tsup + tailwind preset + globals)     ← Wave 1 prompt #3
@@ -94,35 +100,51 @@ ca8a429  docs: documentação inicial do Forge
   - Helper `cn()` (clsx + tailwind-merge), `forwardRef + displayName` em todos os componentes
   - Novos presets em `@ethos/config`: `tsconfig/react-library.json` (D7); `base.json` agora inline (sem extends da raiz) — destrava resolver no Windows/pnpm
   - 10/11 ACs verde; AC#8 (storybook dev visual em :6006) é validação manual humana
-- ✅ Branch `main` em sync com `origin/main` (auto-push ativo)
+- ✅ **`@ethos/ui` primitivos Radix concluídos (prompt #4)** — 5 waves em 5 commits
+  - **32 primitivos** entregues, cobrindo 5 grupos: Forms (9), Feedback (6), Overlays + DatePicker (7), Navegação (4), Estrutura (6)
+  - **22 deps** novas em single-pass (D3): 19 Radix individuais (label, select, checkbox, radio-group, switch, slider, progress, dialog, popover, tooltip, dropdown-menu, context-menu, tabs, separator, scroll-area, aspect-ratio, avatar, accordion, collapsible) + sonner^2 + cmdk^1 + react-day-picker^9 — todos majors confirmados via `pnpm view` antes de pinar (D2)
+  - **104 stories** totais no Storybook (≥3 por componente, D15)
+  - Padrão flat aplicado em 100% (D1): TODOS os sub-componentes (DropdownMenu.SubTrigger, ScrollBar, FormFieldLabel, etc.) no MESMO arquivo do principal
+  - Decisões locked: D4 TimePicker manual (mask HH:mm), D5 FormField sem RHF (cloneElement aria-wiring), D6 Toast = Sonner wrapper (`<Toaster richColors closeButton />`), D7 Sheet = Dialog+side cva, D8 Spinner = Loader2 wrap, D9 Pagination/Breadcrumb manuais (Pagination reusa buttonVariants), D11 HoverCard/Drawer/Calendar/Menubar/NavigationMenu/AlertDialog NÃO implementados (fora do prompt #4 — divergence vs doc 04 anotada como follow-up)
+  - D12 aplicado: Popover criado ANTES de DatePicker na Wave 3 (DatePicker depende dele)
+  - DatePicker: Popover + react-day-picker v9 com DayPicker mode=single, locale ptBR via `react-day-picker/locale`, formato pt-BR via `Intl.DateTimeFormat` (sem dep nova de date-fns)
+  - `tailwind.config.ts` ganhou keyframes `accordion-down`/`accordion-up` (tailwindcss-animate não cobria as classes `data-[state=open]:animate-accordion-down`)
+  - Build final: `dist/index.mjs` 65.28 KB (era ~3 KB pós-#3) + `dist/index.d.mts` 33.08 KB
+  - **9/10 ACs verde** (AC#10 a11y manual em :6006 deferido como follow-up)
+- ✅ Branch `main` em sync com `origin/main` (auto-push ativo após cada commit — D18)
 
-## 6. Próximo passo: prompt #4 (`@ethos/ui` — primitivos Radix-based)
+## 6. Próximo passo: prompt #5 (`@ethos/ui` — compostos)
 
-Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §4. Vai expandir de 3 → ~30 primitivos consumindo Radix UI:
+Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §5. Vai construir compostos consumindo os 32 primitivos da fundação + Wave 1-5 do prompt #4:
 
-- Form: Label, Textarea, Select, Checkbox, Radio, Switch, Slider, Toggle
-- Overlays: Dialog, AlertDialog, Sheet, Popover, Tooltip, HoverCard, DropdownMenu, ContextMenu
-- Navegação: Tabs, NavigationMenu, Breadcrumb, Pagination, Accordion
-- Display: Badge, Avatar, Separator, Progress, Skeleton, Toast (Sonner)
-- Outros conforme prompt #4
+- **DataTablePro** — TanStack Table sobre primitivos (Tabs/Pagination/DropdownMenu/Checkbox/Input)
+- **FormBuilder** — orquestração RHF + Zod + FormField + Input/Textarea/Select/Checkbox/RadioGroup/Switch/Slider/TimePicker/DatePicker
+- **KpiCard, MetricCard** — Card + Skeleton + Spinner + Badge
+- **ConfirmDialog** — Dialog + Button (cobre o caso AlertDialog que ficou fora do #4 — D10)
+- **CommandPalette** — Command + Dialog (já temos `CommandDialog` exposto, será envolvido em UX completo com cmd+k handler)
+- Outros conforme prompt #5
 
-**Estado de partida prompt #4:**
+**Estado de partida prompt #5:**
 
-- Bootstrap completo (D1–D11 do prompt #3 honrados): tsup, tailwind preset, globals.css, cn helper
-- 3 primitivas existentes funcionam como template/padrão para os ~30 novos
-- Decisões abertas para resolver no #4:
-  - **`tsconfig.base.json` raiz órfão** após inline no `@ethos/config` — decidir manter (compatibilidade docs/03 e docs/09) ou remover
-  - **`incremental: false` override** local em `packages/ui/tsconfig.json` — mover desligamento pro preset base (`@ethos/config/tsconfig/base.json`) ou manter local
-  - **`tailwind.config.ts` content** atualmente declara `./src/**/*` + `./.storybook/**/*` no preset; revisar quando `apps/playground` consumir o preset (prompt futuro)
-  - **`<Button asChild loading>`** quebra Radix Slot single-child; resolver quando primeiro callsite real precisar combinar
-  - **`dist/index.d.mts`** (não `.d.ts`) — comportamento padrão do tsup com `format: ['esm']`; aceitável dado D10 (workspace consumers usam src direto)
+- 32 primitivos navegáveis no Storybook em :6006 (104 stories totais)
+- Build/typecheck/lint/build-storybook verde monorepo-wide
+- Helper `buttonVariants` exportado (Pagination já reusa — padrão estabelecido para reusar variants entre primitivo e composto)
+- Padrão flat 100% aplicado nos primitivos — replicar em compostos (DataTablePro com sub-componentes no MESMO arquivo)
+- 22 deps Radix/sonner/cmdk/day-picker já instaladas — Wave 1 do #5 só precisa adicionar `@tanstack/react-table` + `react-hook-form` + `@hookform/resolvers` + `zod`
+
+**Concerns abertos (próximo deve resolver ou re-deferir):**
+
+- **Divergence doc 04 vs prompt #4:** componentes do doc 04 NÃO implementados no #4 — `HoverCard`, `Drawer` standalone, `Calendar` standalone, `Menubar`, `NavigationMenu`, `AlertDialog`. Decisão D11 deferiu pra resolver em doc-update follow-up. Recomendação: atualizar `docs/04-BIBLIOTECA-UI.md` durante prep do #5 para refletir realidade.
+- **Concerns do prompt #3 ainda abertos** (deferidos no #4 via D17): `tsconfig.base.json` órfão, `incremental: false` override, `<Button asChild loading>` Slot break, `.d.mts` em vez de `.d.ts`. Resolver quando `apps/playground` ou `templates/starter/apps/web` consumir `@ethos/ui` — aí ficará claro se algum bloqueia consumer real.
+- **AC#10 a11y manual** do prompt #4 — validação humana em http://localhost:6006 ainda pendente. Tab navigation, Esc fecha overlays, Enter/Space ativam triggers, setas em Select/DropdownMenu. Reportar issues como follow-ups isolados.
 
 **Princípios reaproveitados (não-negociáveis):**
 
 - Não copiar shadcn cru — inspiração estrutural (Radix + slot + cn), estética/tokens proprietários
 - Sem CSS-in-JS (só Tailwind), sem libs UI prontas
 - Mobile-first com viewports do Storybook
-- TypeScript strict; `forwardRef` + `displayName` em todos os primitivos
+- TypeScript strict; `forwardRef` + `displayName` em todos os componentes
+- Compostos REUSAM primitivos — nunca redeclaram styling/variants (importam de `./<Primitivo>`)
 
 ## 7. Pipeline planejado (#3 a #23)
 
