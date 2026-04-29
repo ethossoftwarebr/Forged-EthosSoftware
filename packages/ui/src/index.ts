@@ -52,3 +52,67 @@ export { Toaster, toast, type ToasterProps } from './components/Toast';
 export { Skeleton } from './components/Skeleton';
 export { Spinner, type SpinnerProps } from './components/Spinner';
 export { Progress } from './components/Progress';
+
+// Wave 3 — GRUPO C: Overlays + DatePicker
+export { Popover, PopoverTrigger, PopoverContent } from './components/Popover';
+export {
+  Dialog,
+  DialogTrigger,
+  DialogPortal,
+  DialogClose,
+  DialogOverlay,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './components/Dialog';
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetPortal,
+  SheetOverlay,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+  sheetVariants,
+} from './components/Sheet';
+export { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './components/Tooltip';
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuRadioGroup,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+} from './components/DropdownMenu';
+export {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuGroup,
+  ContextMenuPortal,
+  ContextMenuSub,
+  ContextMenuRadioGroup,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+} from './components/ContextMenu';
+export { DatePicker, type DatePickerProps } from './components/DatePicker';
