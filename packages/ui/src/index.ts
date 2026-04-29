@@ -149,3 +149,22 @@ export {
   CommandSeparator,
   CommandShortcut,
 } from './components/Command';
+
+// Wave 5 — GRUPO E: Estrutura
+export { Separator } from './components/Separator';
+export { ScrollArea, ScrollBar } from './components/ScrollArea';
+export { AspectRatio } from './components/AspectRatio';
+export {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  avatarVariants,
+  type AvatarProps,
+} from './components/Avatar';
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from './components/Accordion';
+export { Collapsible, CollapsibleTrigger, CollapsibleContent } from './components/Collapsible';
