@@ -4,8 +4,8 @@
 
 > Resume artifact pra novas sessões do Claude Code. Lido automaticamente pelo agent durante pipelines; serve de baseline pra qualquer dev/sessão que pegar o projeto.
 >
-> **Atualizado:** 2026-04-29
-> **Estado:** prompts #1 (setup), #2 (tooling), #3 (`@ethos/ui` fundação) e **#4 (`@ethos/ui` primitivos — 32 componentes Radix-based)** concluídos e pushados. Próximo: prompt #5 (`@ethos/ui` compostos — DataTablePro, FormBuilder, KpiCard, ConfirmDialog, etc.).
+> **Atualizado:** 2026-04-30
+> **Estado:** prompts #1 (setup), #2 (tooling), #3 (`@ethos/ui` fundação), #4 (`@ethos/ui` primitivos — 32) e **#5 (`@ethos/ui` compostos — 10 entregues em 5 waves)** concluídos e pushados. Próximo: prompt #6 (`@ethos/ui` Layouts — Dashboard, Auth, Settings).
 
 ## 1. O que é o projeto
 
@@ -50,6 +50,12 @@ Documentação completa em `docs/` (14 .md) e `CLAUDE.md` na raiz. `docs/12-PROM
 ## 4. Progresso (commits no main, pushados em origin)
 
 ```
+1f8a5f3  feat(ui): composto FiltersPanel no @ethos/ui (wave 5 do prompt #5) — FINAL
+50e2f9f  feat(ui): composto DataTablePro no @ethos/ui (wave 4 do prompt #5)
+4080f6c  feat(ui): composto FormBuilder no @ethos/ui (wave 3 do prompt #5)
+6302f59  feat(ui): compostos KpiCard e ConfirmDialog no @ethos/ui (wave 2 do prompt #5)
+501bbdc  feat(ui): compostos atomic no @ethos/ui (wave 1 do prompt #5)
+f436e22  docs(handoff): atualiza notes apos prompt #4 (32 primitivos @ethos/ui)
 e28c4ea  feat(ui): primitivos do grupo Estrutura no @ethos/ui (wave 5 — fim do prompt #4)
 280a2cc  feat(ui): primitivos do grupo Navegacao no @ethos/ui (wave 4)
 9796ce6  feat(ui): primitivos do grupo Overlays + DatePicker no @ethos/ui (wave 3)
@@ -111,26 +117,41 @@ ca8a429  docs: documentação inicial do Forge
   - `tailwind.config.ts` ganhou keyframes `accordion-down`/`accordion-up` (tailwindcss-animate não cobria as classes `data-[state=open]:animate-accordion-down`)
   - Build final: `dist/index.mjs` 65.28 KB (era ~3 KB pós-#3) + `dist/index.d.mts` 33.08 KB
   - **9/10 ACs verde** (AC#10 a11y manual em :6006 deferido como follow-up)
+- ✅ **`@ethos/ui` compostos concluídos (prompt #5)** — 5 waves em 5 commits
+  - **10 compostos** em pastas `src/components/<NomeComposto>/index.tsx` (D1 — primitivos do #4 continuam flat): StatusBadge, UserAvatar, SectionHeader, PageHeader, EmptyState, KpiCard, ConfirmDialog, FormBuilder, DataTablePro, FiltersPanel
+  - **6 deps runtime** single-pass (D3): `@tanstack/react-table^8`, `@tanstack/react-virtual^3`, `react-hook-form^7`, `@hookform/resolvers^5`, `zod^4`, `recharts^3`
+  - **52 stories** totais no Storybook (≥5 por composto, D13 — explícito no prompt #5)
+  - Padrões novos introduzidos: KpiCard com cva accent border absoluto + Sparkline recharts; ConfirmDialog Provider+useConfirm hook (Promise-based, useRef pra evitar stale closure); FormBuilder discriminated union 12 tipos D4 com `register` (Input/Textarea) ou `Controller` (Select/Checkbox/Switch/Date/custom); DataTablePro TanStack Table v8 + react-virtual auto-threshold=100 (D10), exportCsv puro RFC 4180; FiltersPanel modes sheet|inline (D8) com Sheet primitivo
+  - Decisões locked: D5 ConfirmDialog 4 variants (default/destructive/warning/info), D6 KpiCard sparkline opcional, D7 EmptyState 1 componente com 3 variants, D9 DataTablePro segue API do doc 04, D11 SearchBar/StatGrid/Timeline/CommandPalette/ChartCard NÃO implementados (D11), D14 5 commits + auto-push, D15 compostos REUSAM primitivos (zero redeclaração de styling)
+  - Build final: `dist/index.mjs` 117 KB (era 65 KB pós-#4) + `dist/index.d.mts` 46 KB
+  - **8/8 ACs PASS** — qa.result event registrado no harness (overall=pass)
+  - Concerns abertos pra resolver em prompt futuro: (a) PageHeader exporta `BreadcrumbItem` como alias `PageHeaderBreadcrumbItem` por colisão com primitivo Breadcrumb; (b) `FilterOption` colide entre DataTablePro/types.ts (canônico) e FiltersPanel/types.ts — re-exportado como `FiltersPanelOption`; (c) FormBuilder usa `zodResolver(schema as never) as Resolver<T>` pra unificar Zod v3/v4 input shapes (z.coerce input=unknown vs Resolver expects FieldValues)
 - ✅ Branch `main` em sync com `origin/main` (auto-push ativo após cada commit — D18)
 
-## 6. Próximo passo: prompt #5 (`@ethos/ui` — compostos)
+## 6. Próximo passo: prompt #6 (`@ethos/ui` — Layouts)
 
-Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §5. Vai construir compostos consumindo os 32 primitivos da fundação + Wave 1-5 do prompt #4:
+Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §6. Vai construir layouts consumindo primitivos do #4 + compostos do #5:
 
-- **DataTablePro** — TanStack Table sobre primitivos (Tabs/Pagination/DropdownMenu/Checkbox/Input)
-- **FormBuilder** — orquestração RHF + Zod + FormField + Input/Textarea/Select/Checkbox/RadioGroup/Switch/Slider/TimePicker/DatePicker
-- **KpiCard, MetricCard** — Card + Skeleton + Spinner + Badge
-- **ConfirmDialog** — Dialog + Button (cobre o caso AlertDialog que ficou fora do #4 — D10)
-- **CommandPalette** — Command + Dialog (já temos `CommandDialog` exposto, será envolvido em UX completo com cmd+k handler)
-- Outros conforme prompt #5
+- **DashboardLayout** — sidebar (collapsible) + topbar (UserAvatar do #5 + notificações) + main area; consome PageHeader/SectionHeader
+- **AuthLayout** — split com hero esquerda + form direita; envolve FormBuilder do #5
+- **SettingsLayout** — sidebar de seções + main area com SectionHeader
+- Outros conforme prompt #6
 
-**Estado de partida prompt #5:**
+**Estado de partida prompt #6:**
 
-- 32 primitivos navegáveis no Storybook em :6006 (104 stories totais)
-- Build/typecheck/lint/build-storybook verde monorepo-wide
-- Helper `buttonVariants` exportado (Pagination já reusa — padrão estabelecido para reusar variants entre primitivo e composto)
-- Padrão flat 100% aplicado nos primitivos — replicar em compostos (DataTablePro com sub-componentes no MESMO arquivo)
-- 22 deps Radix/sonner/cmdk/day-picker já instaladas — Wave 1 do #5 só precisa adicionar `@tanstack/react-table` + `react-hook-form` + `@hookform/resolvers` + `zod`
+- 32 primitivos + 10 compostos navegáveis no Storybook em :6006 (104 + 52 = ~156 stories)
+- Build/typecheck/lint/build-storybook verde monorepo-wide (`@ethos/ui` 117KB ESM + 46KB d.mts)
+- Padrão consolidado: primitivos flat (`src/components/<Primitivo>.tsx`), compostos em pastas (`src/components/<Composto>/index.tsx`) com sub-arquivos opcionais
+- Reuse-first established: compostos REUSAM primitivos sem redeclarar styling/variants — Layouts devem fazer o mesmo (consumir PageHeader/SectionHeader/UserAvatar/etc.)
+
+**Concerns abertos do #5 (próximo deve resolver ou re-deferir):**
+
+- (a) `BreadcrumbItem` colide entre primitivo Breadcrumb e composto PageHeader — alias `PageHeaderBreadcrumbItem` no barrel
+- (b) `FilterOption` colide entre DataTablePro/types.ts (canônico) e FiltersPanel/types.ts — alias `FiltersPanelOption`
+- (c) FormBuilder usa `zodResolver(schema as never) as Resolver<T>` — solução pragmática pra unificar Zod v3/v4 input shapes
+- (d) `SearchBar`, `StatGrid`, `Timeline`, `CommandPalette`, `ChartCard` (D11) NÃO foram implementados — divergence vs doc 04, deferido pra prompt #5.5 ou pós-Layouts
+- (e) FormBuilder superset do doc 04 (`currency`, `cpf`, `cnpj`, `cep`, etc. — D4) é follow-up Brasil-specific
+- (f) Validação humana de a11y dos compostos pendente em http://localhost:6006
 
 **Concerns abertos (próximo deve resolver ou re-deferir):**
 
@@ -153,9 +174,9 @@ Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §5. Vai construir compostos co
 | 1     | Setup do monorepo                                                                     | ✅ Concluído   |
 | 2     | Configuração de tooling                                                               | ✅ Concluído   |
 | 3     | @ethos/ui — Fundação (Button, Input, Card + tokens)                                   | ✅ Concluído   |
-| 4     | @ethos/ui — Primitivos (~30 componentes Radix-based)                                  | ⏭️ **Próximo** |
-| 5     | @ethos/ui — Compostos (DataTablePro, FormBuilder, KpiCard, etc.)                      | Pendente       |
-| 6     | @ethos/ui — Layouts (Dashboard, Auth, Settings)                                       | Pendente       |
+| 4     | @ethos/ui — Primitivos (32 componentes Radix-based)                                   | ✅ Concluído   |
+| 5     | @ethos/ui — Compostos (10: DataTablePro, FormBuilder, KpiCard, etc.)                  | ✅ Concluído   |
+| 6     | @ethos/ui — Layouts (Dashboard, Auth, Settings)                                       | ⏭️ **Próximo** |
 | 7     | Setup do app API (NestJS em `templates/starter/apps/api/`)                            | Pendente       |
 | 8     | Auth + Multi-tenant                                                                   | Pendente       |
 | 9     | Geradores Backend (em `tools/generators/forge-controller/`)                           | Pendente       |
