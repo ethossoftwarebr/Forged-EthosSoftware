@@ -1,0 +1,11 @@
+import { useContext } from 'react';
+
+import { ConfirmDialogContext } from './ConfirmDialogProvider';
+
+export function useConfirm() {
+  const ctx = useContext(ConfirmDialogContext);
+  if (!ctx) {
+    throw new Error('useConfirm must be used within <ConfirmDialogProvider>');
+  }
+  return ctx.confirm;
+}

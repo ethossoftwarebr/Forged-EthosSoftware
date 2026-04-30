@@ -179,3 +179,17 @@ export {
   type BreadcrumbItem as PageHeaderBreadcrumbItem,
 } from './components/PageHeader';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
+
+// Wave 2 (Compostos #5) — KpiCard + ConfirmDialog
+export {
+  KpiCard,
+  type KpiCardProps,
+  type KpiTrend,
+  type KpiTrendDirection,
+} from './components/KpiCard';
+export {
+  ConfirmDialogProvider,
+  useConfirm,
+  type ConfirmOptions,
+  type ConfirmVariant,
+} from './components/ConfirmDialog';
