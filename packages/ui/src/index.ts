@@ -209,3 +209,15 @@ export type {
   CustomField,
   CustomFieldRenderProps,
 } from './components/FormBuilder/types';
+
+// Wave 4 (Compostos #5) — DataTablePro
+export { DataTablePro, type DataTableProProps } from './components/DataTablePro';
+export { exportCsv } from './components/DataTablePro/exportCsv';
+export type {
+  DataTableColumn,
+  DataTableDensity,
+  FilterOption,
+  BulkAction,
+  RowAction,
+  VirtualizeOption,
+} from './components/DataTablePro/types';
