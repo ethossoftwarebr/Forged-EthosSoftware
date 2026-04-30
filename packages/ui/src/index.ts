@@ -168,3 +168,14 @@ export {
   AccordionContent,
 } from './components/Accordion';
 export { Collapsible, CollapsibleTrigger, CollapsibleContent } from './components/Collapsible';
+
+// Wave 1 (Compostos #5) — atomic
+export { StatusBadge, statusBadgeVariants, type StatusBadgeProps } from './components/StatusBadge';
+export { UserAvatar, type UserAvatarProps } from './components/UserAvatar';
+export { SectionHeader, type SectionHeaderProps } from './components/SectionHeader';
+export {
+  PageHeader,
+  type PageHeaderProps,
+  type BreadcrumbItem as PageHeaderBreadcrumbItem,
+} from './components/PageHeader';
+export { EmptyState, type EmptyStateProps } from './components/EmptyState';
