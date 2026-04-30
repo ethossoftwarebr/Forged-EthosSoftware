@@ -221,3 +221,20 @@ export type {
   RowAction,
   VirtualizeOption,
 } from './components/DataTablePro/types';
+
+// Wave 5 (Compostos #5) — FiltersPanel (FINAL)
+export { FiltersPanel } from './components/FiltersPanel';
+export type {
+  Filter,
+  FilterType,
+  FilterValue,
+  FiltersValues,
+  FiltersPanelMode,
+  FiltersPanelProps,
+  RangeFilter,
+  SelectFilter,
+  MultiselectFilter,
+  DaterangeFilter,
+  SearchFilter,
+  FilterOption as FiltersPanelOption,
+} from './components/FiltersPanel/types';
