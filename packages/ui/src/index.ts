@@ -193,3 +193,19 @@ export {
   type ConfirmOptions,
   type ConfirmVariant,
 } from './components/ConfirmDialog';
+
+// Wave 3 (Compostos #5) — FormBuilder
+export { FormBuilder, type FormBuilderProps } from './components/FormBuilder';
+export type {
+  Field,
+  FieldType,
+  BaseField,
+  TextField,
+  SelectField,
+  SelectOption,
+  CheckboxField,
+  DateField,
+  FileField,
+  CustomField,
+  CustomFieldRenderProps,
+} from './components/FormBuilder/types';
