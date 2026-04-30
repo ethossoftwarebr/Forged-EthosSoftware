@@ -238,3 +238,11 @@ export type {
   SearchFilter,
   FilterOption as FiltersPanelOption,
 } from './components/FiltersPanel/types';
+
+// Layouts (Prompt #6) — Wave 1
+export { AuthLayout, type AuthLayoutProps } from './layouts/AuthLayout';
+export {
+  SettingsLayout,
+  type SettingsLayoutProps,
+  type SettingsSection,
+} from './layouts/SettingsLayout';
