@@ -246,3 +246,20 @@ export {
   type SettingsLayoutProps,
   type SettingsSection,
 } from './layouts/SettingsLayout';
+
+// Layouts (Prompt #6) — Wave 2
+export {
+  DashboardLayout,
+  type DashboardLayoutProps,
+  type DashboardNotification,
+  type DashboardBreadcrumbItem,
+} from './layouts/DashboardLayout';
+export {
+  defineSidebarConfig,
+  type SidebarConfig,
+  type SidebarItemConfig,
+} from './layouts/DashboardLayout/sidebarConfig';
+export {
+  useSidebarState,
+  type UseSidebarStateReturn,
+} from './layouts/DashboardLayout/useSidebarState';
