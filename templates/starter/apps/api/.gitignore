@@ -1,0 +1,8 @@
+dist/
+node_modules/
+.env
+.env.local
+.env.*.local
+prisma/migrations/dev_*
+coverage/
+.turbo/
