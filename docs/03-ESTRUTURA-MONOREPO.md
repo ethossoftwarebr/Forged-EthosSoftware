@@ -16,7 +16,9 @@ A Forge é um monorepo `Turborepo + pnpm workspaces` com três tipos de pasta:
 ethos-forge/
 ├── apps/
 │   └── playground/                # App Next.js que usa todos os packages
-├── packages/                      # 7 infra + 8 plugáveis = 15 packages
+├── packages/                      # v1 inicial: 7 infra + 8 plugáveis = 15 packages
+│                                  # alvo final: 16 infra + 23 plugáveis = 39 packages (ver doc 13)
+│   # ─── Infra v1 (7) — sempre presentes ───
 │   ├── ui/                        # @ethos/ui — componentes proprietários
 │   ├── auth/                      # @ethos/auth — auth multi-tenant
 │   ├── database/                  # @ethos/database — Prisma client wrapper + tipos do schema
@@ -24,6 +26,17 @@ ethos-forge/
 │   ├── config/                    # @ethos/config — tsconfig, eslint, tailwind preset
 │   ├── types/                     # @ethos/types — types compartilhados
 │   ├── utils/                     # @ethos/utils — funções utilitárias
+│   # ─── Infra adicional pós-v1 (9) — ver docs/13-MANUTENCAO-EVOLUCAO.md §6 ───
+│   ├── storage/                   # @ethos/storage — S3/R2/MinIO + signed URLs (v1.1)
+│   ├── email/                     # @ethos/email — Resend/SendGrid wrapper (v1.1)
+│   ├── notifications/             # @ethos/notifications — sino + push + email unificados (v1.1)
+│   ├── queue/                     # @ethos/queue — BullMQ standalone (extraído de api-base, v1.1)
+│   ├── cache/                     # @ethos/cache — Redis wrapper + invalidação por tags (v1.2)
+│   ├── i18n/                      # @ethos/i18n — pt-BR + en + es (v1.2)
+│   ├── pdf/                       # @ethos/pdf — geração de relatórios e contratos (v1.3)
+│   ├── search/                    # @ethos/search — Postgres FTS ou Meilisearch (v1.3)
+│   ├── observability/             # @ethos/observability — Sentry + healthchecks + métricas (v1.4)
+│   # ─── Plugáveis v1 (8) — opt-in por projeto ───
 │   ├── ai-chat/                   # @ethos/ai-chat
 │   ├── ai-rag/                    # @ethos/ai-rag
 │   ├── ocr/                       # @ethos/ocr
@@ -31,7 +44,11 @@ ethos-forge/
 │   ├── google/                    # @ethos/google
 │   ├── n8n/                       # @ethos/n8n
 │   ├── payments/                  # @ethos/payments
-│   └── erp-bridge/                # @ethos/erp-bridge
+│   ├── erp-bridge/                # @ethos/erp-bridge
+│   # ─── Plugáveis adicionais (15) — pós-v1, demand-driven (regra dos 3 projetos) ───
+│   #     Ver docs/08-PACOTES-PLUGAVEIS.md §9-§23 e docs/13-MANUTENCAO-EVOLUCAO.md §7:
+│   #     whisper, maps, sms, signature, nfse, marketplaces, social, email-marketing,
+│   #     scheduling, iot-telemetry, crm-bridge, contabilidade, pix-direto, loyalty, reviews
 ├── tools/
 │   └── generators/                # Geradores Forge (Handlebars + scripts) — não publicáveis, fora do workspace pnpm
 ├── templates/
@@ -190,6 +207,7 @@ packages/api-base/
 Pacote dedicado a autenticação multi-tenant. Funciona junto com `api-base/auth/` — `auth/` é o pacote standalone e re-exporta o módulo Nest.
 
 Inclui:
+
 - Hooks React (`useAuth`, `useUser`, `useTenant`)
 - Componentes (`<LoginForm>`, `<RegisterForm>`, `<TenantSwitcher>`)
 - Middleware Next.js pra rotas protegidas
@@ -215,9 +233,64 @@ packages/database/
 ```
 
 Por que isolar do `api-base/`:
+
 - `database/` é consumível tanto pelo backend NestJS quanto por scripts (seed, migrations CLI)
 - Schema fica versionado em um único lugar — projetos cliente herdam via dependency
 - Geradores backend (em `tools/generators/`) leem `prisma/schema.prisma` deste pacote
+
+---
+
+## Infra adicional (pós-v1)
+
+Os 7 packages acima são a base mínima da Forge. Conforme projetos reais aparecem, **9 infras adicionais** entram no roadmap pós-v1.0 (regras de cadência em `docs/13-MANUTENCAO-EVOLUCAO.md` §6).
+
+### `packages/storage/` (v1.1)
+
+Abstração de storage de arquivos. Adapter pattern: S3, Cloudflare R2, MinIO self-hosted. API unificada `upload`, `download`, `delete`, `signedUrl`. Multi-tenant com prefixo de path por tenant.
+
+**Por que cedo:** ~90% dos projetos cliente sobem fotos (perfis, produtos), documentos (NF, contratos), uploads.
+
+### `packages/email/` (v1.1)
+
+Envio de emails transacionais. Adapter pattern: Resend (default), SendGrid, AWS SES. Templates JSX-Email ou react-email. Hooks de tracking (delivered, opened, clicked) opcionais.
+
+**Por que cedo:** auth manda email (welcome, recovery, invite). Sem email, auth quebra de cara.
+
+### `packages/notifications/` (v1.1)
+
+Sistema unificado: sino in-app no dashboard + Web Push + email + SMS — todos disparados por um único `notify()`. Persistência de notificações no Postgres, marcação read/unread, preferências por user (qual canal pra qual tipo).
+
+**Depende de:** `@ethos/email` + (futuramente) `@ethos/sms`.
+
+### `packages/queue/` (v1.1)
+
+BullMQ wrapper standalone. Hoje a logic de queue vive embutida no `@ethos/api-base`. Quando ficar grande, extrai pra package próprio. Decorators `@Queue('jobName')`, `@OnFailure()`, retry com backoff exponencial, dashboard read-only.
+
+**Migração:** `@ethos/api-base` v2 remove a queue interna e marca `@ethos/queue` como peer dep.
+
+### `packages/cache/` (v1.2)
+
+Wrapper de Redis com invalidação por tags. API: `cache.get(key)`, `cache.set(key, value, { tags })`, `cache.invalidateTag(tag)`. Decorator `@Cacheable('userProfile', { ttl: 60, tags: ['user:{userId}'] })` pra services NestJS.
+
+### `packages/i18n/` (v1.2)
+
+Internacionalização: pt-BR (default), en, es. Formatadores: `formatCurrency`, `formatDate`, `formatNumber` com locale. Tradução via `t('key')` no React (next-intl wrapper) e `i18n.t('key')` no backend (logs e responses traduzidos).
+
+### `packages/pdf/` (v1.3)
+
+Geração de PDF: relatórios, contratos, recibos, boletos. Engine: react-pdf (preferido — JSX) ou Puppeteer (fallback HTML→PDF). Templates pré-prontos pra documentos comuns Brasil (recibo, contrato simples, NF auxiliar).
+
+### `packages/search/` (v1.3)
+
+Full-text search em listagens. Adapter: Postgres FTS (default — sem infra extra) ou Meilisearch (volumes grandes). Indexação automática via Prisma extension. Highlight, fuzzy match, filtros facetados. Multi-tenant por filter `tenantId`.
+
+### `packages/observability/` (v1.4)
+
+Observabilidade unificada: Sentry (errors), healthchecks Kubernetes-style, métricas Prometheus, tracing OpenTelemetry. Module único `ObservabilityModule.forRoot({ sentryDsn, ... })` que ativa tudo. Pino já existe no api-base — observability complementa.
+
+---
+
+## Plugáveis (v1 + adicionais)
 
 ### `packages/ai-chat/`, `packages/ai-rag/`, etc.
 
@@ -389,9 +462,9 @@ Cada package estende esse via `extends: "../../tsconfig.base.json"`.
 
 ```yaml
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "templates/*"
+  - 'apps/*'
+  - 'packages/*'
+  - 'templates/*'
 ```
 
 ### `turbo.json`
@@ -465,7 +538,7 @@ packages:
 Pra desenvolvimento local. Não é usado em produção (Railway gerencia tudo).
 
 ```yaml
-version: "3.9"
+version: '3.9'
 
 services:
   postgres:
@@ -476,11 +549,11 @@ services:
       POSTGRES_PASSWORD: ethos_dev_password
       POSTGRES_DB: ethos_dev
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ethos"]
+      test: ['CMD-SHELL', 'pg_isready -U ethos']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -489,11 +562,11 @@ services:
     image: redis:7-alpine
     container_name: ethos-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -606,7 +679,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -641,6 +714,7 @@ Padrão **Conventional Commits**:
 ```
 
 Tipos:
+
 - `feat`: nova funcionalidade
 - `fix`: correção de bug
 - `docs`: mudança em documentação
@@ -671,6 +745,7 @@ Scope é opcional mas recomendado pra clareza em PRs grandes.
 - **`docs/[nome]`** — só documentação
 
 PRs precisam de:
+
 - CI verde
 - Pelo menos 1 review (Ethos ou dev sênior)
 - Squash merge (1 commit por PR no histórico de `main`)
