@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { EnvModule } from './config/env.module';
+import { HealthModule } from './health/health.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -25,7 +26,8 @@ const isProduction = process.env.NODE_ENV === 'production';
     }),
     // 60 req/min default (D16). Overrides por endpoint vêm no #8.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
-    // HealthModule wired na Wave 3.
+    // Health endpoint via Terminus (Wave 3). PrismaHealthIndicator entra no #8.
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
