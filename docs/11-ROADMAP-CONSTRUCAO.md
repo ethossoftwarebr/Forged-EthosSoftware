@@ -15,14 +15,20 @@ A ordem abaixo respeita dependências reais e progride do **mais foundational** 
 ## Visão geral em fases
 
 ```
-Fase 1: Fundação                    → monorepo + configs + CI
-Fase 2: Identidade visual e UI      → biblioteca @ethos/ui
-Fase 3: Auth e infraestrutura       → @ethos/auth + @ethos/api-base
-Fase 4: Geradores                   → @ethos/generators (back + front)
-Fase 5: Template starter            → templates/starter clonável
-Fase 6: Validação real              → primeiro projeto real usando a Forge
-Fase 7: Pacotes plugáveis           → todos os 8 pacotes, em ordem
-Fase 8: Refinamento e v1 estável    → polish + docs + lançamento interno
+Fase 1: Fundação                      → monorepo + configs + CI
+Fase 2: Identidade visual e UI        → biblioteca @ethos/ui (primitives + compounds + layouts)
+Fase 2.5: Templates Premium           → 5-6 páginas opinativas visualmente fortes
+Fase 3: Auth e infraestrutura         → @ethos/auth + @ethos/api-base
+Fase 4: Geradores                     → @ethos/generators (back + front)
+Fase 5: Template starter              → templates/starter clonável
+Fase 6: Validação real                → primeiro projeto real usando a Forge
+Fase 7: Pacotes plugáveis (v1)        → 8 pacotes da v1.0 em ordem
+Fase 8: Refinamento e v1 estável      → polish + docs + lançamento interno → tag v1.0.0
+─── pós-v1 ───
+Fase 9: Infra adicional (v1.1-v1.4)   → +9 packages (storage, email, queue, ...) — ver doc 13 §6
+Fase 10: Templates premium expandidos → wave 2 (kanban, calendar view, pipeline, etc.)
+Fase 11: Plugáveis adicionais         → 15 packages demand-driven (regra dos 3) — ver doc 13 §7
+Fase 12: Manutenção contínua          → sprint trimestral de upgrade + audits — ver doc 13 §3
 ```
 
 Cada fase é descrita em detalhe a seguir, com critérios objetivos de conclusão.
@@ -129,6 +135,53 @@ Todos com:
 Construir componente por componente, usando prompt do **`12-PROMPTS-CLAUDE-CODE.md`**. Cada componente é uma conversa focada. Não tente fazer 30 componentes em uma sessão.
 
 Recomendação: começar pelos primitives mais usados (Button, Input, Card, Dialog). Depois compounds que dependem deles. Layouts por último.
+
+---
+
+## Fase 2.5: Templates Premium (wave 1)
+
+### Objetivo
+
+Componentes da `@ethos/ui` (primitives + compounds + layouts) cobrem o **alfabeto visual** da Forge. Mas alfabeto sozinho não faz texto bonito — precisa de **composição opinativa**. Essa fase entrega 5-6 páginas-template visualmente fortes que servem de referência pra todo projeto cliente.
+
+Por que importa: se cliente novo abrir um projeto Forge e ver "tabela genérica + form genérico", a percepção é "framework". Se ver "dashboard executivo com hierarquia clara + tabela com row-actions sofisticadas + perfil com timeline + kanban premium", a percepção é "produto bem desenhado por agência".
+
+### O que entregar
+
+5-6 templates de página completos em `apps/playground/src/app/templates-premium/`:
+
+1. **Dashboard executivo** — hero KPIs + gráficos + atividade recente, hierarquia visual forte
+2. **Lista enriquecida** — DataTablePro com filtros laterais, row-actions, bulk actions, empty state custom
+3. **Perfil/detalhes com timeline** — header com avatar, abas, timeline de eventos, ações contextuais
+4. **Kanban** — colunas drag-and-drop, cards ricos, filtros, contadores
+5. **Calendar view** — visualização semanal/mensal de agendamentos (será reusada por `@ethos/scheduling`)
+6. **Pipeline / funil de vendas** — stages com totais, drag entre stages, métricas no topo
+
+Cada template:
+
+- Implementado com `@ethos/ui` puro (zero deps novas)
+- Mock data realista (não "Lorem ipsum")
+- Tema light + dark
+- Responsivo 375/768/1024/1440
+- Documentado em `apps/playground` com link direto
+
+### Critérios de pronto
+
+- [ ] 5-6 templates renderizam visualmente "premium" (avaliação humana)
+- [ ] Todos consomem só `@ethos/ui` — zero deps adicionais
+- [ ] Mobile responsive verificado
+- [ ] Dark mode funcional em todos
+- [ ] Time da Ethos olha e diz: "isso parece feito por agência boa"
+
+### Por que entre Fase 2 e Fase 3
+
+- Auth (Fase 3) e geradores (Fase 4) precisam de templates pra usar como output. Se gerar página "list" sem template forte pra inspirar, geradores cospem código mediano.
+- Templates premium definem _padrão de qualidade_ que os geradores precisam atingir.
+
+### Não entregar nessa fase
+
+- Templates específicos de domínio (e-commerce, agendamento, etc.) — esses vêm em Fase 10 quando aparecer demanda real
+- Componentes novos pra `@ethos/ui` — só usar o que existe
 
 ---
 
@@ -492,6 +545,122 @@ Polir tudo. Documentação completa. CHANGELOG. Versionamento. Lançamento inter
 
 ---
 
+## Fase 9: Infra adicional (v1.1 → v1.4 — pós-v1.0)
+
+### Objetivo
+
+Com Forge v1.0 estável e pelo menos 1 projeto cliente em produção, expandir infra com 9 packages que cobrem 90% das necessidades transversais de qualquer sistema.
+
+### O que entregar (em ordem de urgência)
+
+**v1.1 (logo após v1.0):**
+
+- `@ethos/storage` — adapter S3/R2/MinIO + signed URLs
+- `@ethos/email` — Resend/SendGrid wrapper transacional
+- `@ethos/notifications` — sino + push web + email + SMS unificados
+- `@ethos/queue` — BullMQ standalone (extrai de `@ethos/api-base` v1)
+
+**v1.2:**
+
+- `@ethos/cache` — Redis + invalidação por tags
+- `@ethos/i18n` — pt-BR + en + es
+
+**v1.3:**
+
+- `@ethos/pdf` — geração de relatórios e contratos
+- `@ethos/search` — Postgres FTS ou Meilisearch
+
+**v1.4:**
+
+- `@ethos/observability` — Sentry + healthchecks + métricas + tracing
+
+### Critérios de pronto
+
+- [ ] Cada package com README, testes >70% coverage, demo no `apps/playground`
+- [ ] Pelo menos 1 projeto cliente consumindo cada package em produção
+- [ ] CHANGELOG atualizado a cada release
+- [ ] Migration guide do `@ethos/api-base` v1 → v2 (extração da queue)
+
+### Dependências
+
+- Fase 8 (v1.0 estável) concluída
+
+Detalhes em `docs/13-MANUTENCAO-EVOLUCAO.md` §6 e `docs/03-ESTRUTURA-MONOREPO.md` ("Infra adicional").
+
+---
+
+## Fase 10: Templates Premium (wave 2)
+
+### Objetivo
+
+Após 3+ projetos cliente em produção, identificar padrões visuais recorrentes e criar templates premium de domínio.
+
+### Candidatos prováveis (definir após validação)
+
+- Template "Agendamento" (estética/clínica/barbearia)
+- Template "PDV" (varejo/restaurante)
+- Template "Atendimento" (helpdesk/SAC)
+- Template "Pipeline comercial" (CRM)
+- Template "Marketplace" (vendor + buyer)
+
+### Critérios de pronto
+
+- [ ] Cada template usado em ≥2 projetos cliente
+- [ ] Documentado em `apps/playground` como referência
+- [ ] Mobile responsive
+
+---
+
+## Fase 11: Plugáveis adicionais (demand-driven)
+
+### Objetivo
+
+Implementar packages plugáveis adicionais conforme **regra dos 3 projetos** (`docs/13-MANUTENCAO-EVOLUCAO.md` §4-§5). Sem ordem fixa — depende de quais clientes aparecem.
+
+### Lista de monitoramento
+
+15 packages catalogados em `docs/08-PACOTES-PLUGAVEIS.md` §9-§23:
+
+`@ethos/whisper`, `@ethos/maps`, `@ethos/sms`, `@ethos/signature`, `@ethos/nfse`, `@ethos/marketplaces`, `@ethos/social`, `@ethos/email-marketing`, `@ethos/scheduling`, `@ethos/iot-telemetry`, `@ethos/crm-bridge`, `@ethos/contabilidade`, `@ethos/pix-direto`, `@ethos/loyalty`, `@ethos/reviews`
+
+### Critérios pra promover de "lista de monitoramento" para "implementado"
+
+- 3 projetos cliente diferentes pedem a mesma integração, OU
+- Ethos identifica vantagem competitiva clara (ex: `@ethos/nfse` resolve dor universal de prestador de serviço)
+
+### Critérios de pronto por package
+
+Mesmos da Fase 7: backend completo + frontend + testes >70% + docs + demo no playground + multi-tenancy + considerações de segurança.
+
+---
+
+## Fase 12: Manutenção contínua
+
+### Objetivo
+
+Forge madura: sprints trimestrais de upgrade, audits regulares, evolução disciplinada.
+
+### Atividades recorrentes
+
+- **Trimestral:** sprint de upgrade (TS/Node/Next/Nest/Prisma majors) — ver doc 13 §3
+- **Mensal:** audit de deps + revisão visual Storybook + métricas de uso
+- **Semanal:** Renovate/Dependabot reviews + triagem de issues
+- **Anual:** audit arquitetural completo + roadmap do ano seguinte
+
+### Métricas a monitorar
+
+| Métrica                                      | Target   |
+| -------------------------------------------- | -------- |
+| Setup de projeto novo (clone → deploy local) | <2h      |
+| Adição de entidade nova (CRUD completo)      | <10 min  |
+| Cobertura de testes em packages críticos     | >80%     |
+| Idade média de issues abertas                | <30 dias |
+| Tempo entre security advisory → patch        | <72h     |
+
+Ver `docs/13-MANUTENCAO-EVOLUCAO.md` §10-§11 pra detalhes operacionais.
+
+---
+
 ## Mapa de dependências entre fases
 
 ```
@@ -499,17 +668,25 @@ Fase 1 (Fundação)
    ↓
 Fase 2 (UI) ←──── pode ser paralela à Fase 3
    ↓
+Fase 2.5 (Templates Premium wave 1)
+   ↓
 Fase 3 (Auth + api-base)
    ↓
-Fase 4 (Geradores) ──── precisa de Fases 1, 2, 3
+Fase 4 (Geradores) ──── precisa de Fases 1, 2, 2.5, 3
    ↓
 Fase 5 (Starter) ──── precisa de Fases 1-4
    ↓
 Fase 6 (Validação real) ──── precisa de Fase 5
    ↓
-Fase 7 (Pacotes plugáveis) ──── pode começar em paralelo à Fase 6 quando ela estabiliza
+Fase 7 (Pacotes plugáveis v1) ──── pode começar em paralelo à Fase 6 quando ela estabiliza
    ↓
-Fase 8 (v1 estável) ──── todas as anteriores
+Fase 8 (v1 estável — tag v1.0.0) ──── todas as anteriores
+   ↓
+─── pós-v1 (cadência contínua) ───
+Fase 9 (Infra adicional) ──── 1+ projeto cliente em produção
+Fase 10 (Templates wave 2) ──── 3+ projetos cliente
+Fase 11 (Plugáveis adicionais) ──── regra dos 3 (demand-driven)
+Fase 12 (Manutenção contínua) ──── sempre
 ```
 
 Fases 2 e 3 podem ser paralelas (UI e auth são independentes — auth só depende da UI quando vai construir os componentes de login).

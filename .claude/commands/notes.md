@@ -4,8 +4,8 @@
 
 > Resume artifact pra novas sessões do Claude Code. Lido automaticamente pelo agent durante pipelines; serve de baseline pra qualquer dev/sessão que pegar o projeto.
 >
-> **Atualizado:** 2026-04-30
-> **Estado:** prompts #1 (setup), #2 (tooling), #3 (`@ethos/ui` fundação), #4 (`@ethos/ui` primitivos — 32) e **#5 (`@ethos/ui` compostos — 10 entregues em 5 waves)** concluídos e pushados. Próximo: prompt #6 (`@ethos/ui` Layouts — Dashboard, Auth, Settings).
+> **Atualizado:** 2026-05-08 (sessão 3 — pós #6.5)
+> **Estado:** prompts #1 (setup), #2 (tooling), #3 (`@ethos/ui` fundação), #4 (32 primitivos), #5 (10 compostos), **#6 (3 layouts)** e **#6.5 (Roadmap Expansion — docs)** concluídos. UI lib completa. Roadmap expandido: 39 packages totais (16 infra + 23 plugáveis), Fases 9-12 pós-v1 documentadas, doc 13 novo (manutenção/evolução), Fase 2.5 nova (Templates Premium). Próximo: prompt #7 (`templates/starter/apps/api/` — NestJS 10 + Prisma 5 + Postgres).
 
 ## 1. O que é o projeto
 
@@ -50,6 +50,9 @@ Documentação completa em `docs/` (14 .md) e `CLAUDE.md` na raiz. `docs/12-PROM
 ## 4. Progresso (commits no main, pushados em origin)
 
 ```
+7e37e6a  feat(ui): layout DashboardLayout no @ethos/ui (wave 2 do prompt #6) — UI lib FINAL
+4f33807  feat(ui): layouts AuthLayout e SettingsLayout no @ethos/ui (wave 1 do prompt #6)
+c7d0a59  docs(handoff): atualiza notes apos prompt #5 (10 compostos @ethos/ui)
 1f8a5f3  feat(ui): composto FiltersPanel no @ethos/ui (wave 5 do prompt #5) — FINAL
 50e2f9f  feat(ui): composto DataTablePro no @ethos/ui (wave 4 do prompt #5)
 4080f6c  feat(ui): composto FormBuilder no @ethos/ui (wave 3 do prompt #5)
@@ -117,6 +120,17 @@ ca8a429  docs: documentação inicial do Forge
   - `tailwind.config.ts` ganhou keyframes `accordion-down`/`accordion-up` (tailwindcss-animate não cobria as classes `data-[state=open]:animate-accordion-down`)
   - Build final: `dist/index.mjs` 65.28 KB (era ~3 KB pós-#3) + `dist/index.d.mts` 33.08 KB
   - **9/10 ACs verde** (AC#10 a11y manual em :6006 deferido como follow-up)
+- ✅ **`@ethos/ui` layouts concluídos (prompt #6)** — 2 waves em 2 commits — UI lib FINAL
+  - **3 layouts** em pastas `src/layouts/<NomeLayout>/index.tsx` (D1):
+    - **AuthLayout** — Card centered max-w-[400px], `logo`/`footer` props (D5), bg-gradient sutil
+    - **SettingsLayout** — 2-col flex md:flex-row (sidebar interna `SettingsSidebar` + main), mobile-first horizontal scroll
+    - **DashboardLayout** — 8 sub-arquivos: `index.tsx` (orquestrador) + `Sidebar.tsx` + `SidebarItem.tsx` + `SidebarGroup.tsx` + `Topbar.tsx` + `UserMenu.tsx` + `useSidebarState.ts` (hook SSR-safe localStorage) + `sidebarConfig.ts` (`SidebarConfig` type + `defineSidebarConfig` identity helper p/ generators do prompt #11)
+  - **0 deps novas** (D6) — usa primitivos do #4 (Sheet/Collapsible/DropdownMenu/Tooltip/Command/Breadcrumb/Badge/Button) + composto UserAvatar do #5
+  - **14 stories** totais (4 AuthLayout + 4 SettingsLayout + 6 DashboardLayout, ≥4 cada — D13)
+  - Decisões locked: D2 SidebarConfig prop tipada com helper identity, D3 useSidebarState localStorage SSR-safe (chave `ethos:sidebar:<storageKey>`), D4 theme switch agnóstico via `<html class="dark">` toggle (sem next-themes), D5 logo/produto via prop, D6 zero deps, D7 2 commits + auto-push, D8 breadcrumbs slot consome primitivo Breadcrumb (não composto PageHeader), D9 a11y manual deferido
+  - Build final: `dist/index.mjs` 136 KB (era 117 KB pós-#5) + `dist/index.d.mts` 50 KB
+  - **7/7 ACs PASS** — qa.result registrado no harness
+  - Concerns abertos pra resolver no prompt #6.5 ou consumer real: (a) `animate-collapsible-*` keyframes não existem no tailwind config (animação skipped — chevron rotate 150ms é o feedback visual mínimo); (b) 2 `TooltipProvider` (um por instância de Sidebar — desktop + mobile drawer) por escolha consciente do agent
 - ✅ **`@ethos/ui` compostos concluídos (prompt #5)** — 5 waves em 5 commits
   - **10 compostos** em pastas `src/components/<NomeComposto>/index.tsx` (D1 — primitivos do #4 continuam flat): StatusBadge, UserAvatar, SectionHeader, PageHeader, EmptyState, KpiCard, ConfirmDialog, FormBuilder, DataTablePro, FiltersPanel
   - **6 deps runtime** single-pass (D3): `@tanstack/react-table^8`, `@tanstack/react-virtual^3`, `react-hook-form^7`, `@hookform/resolvers^5`, `zod^4`, `recharts^3`
@@ -176,8 +190,9 @@ Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §6. Vai construir layouts cons
 | 3     | @ethos/ui — Fundação (Button, Input, Card + tokens)                                   | ✅ Concluído   |
 | 4     | @ethos/ui — Primitivos (32 componentes Radix-based)                                   | ✅ Concluído   |
 | 5     | @ethos/ui — Compostos (10: DataTablePro, FormBuilder, KpiCard, etc.)                  | ✅ Concluído   |
-| 6     | @ethos/ui — Layouts (Dashboard, Auth, Settings)                                       | ⏭️ **Próximo** |
-| 7     | Setup do app API (NestJS em `templates/starter/apps/api/`)                            | Pendente       |
+| 6     | @ethos/ui — Layouts (Dashboard, Auth, Settings)                                       | ✅ Concluído   |
+| 6.5   | Roadmap Expansion (docs 03/08/11/13 + CLAUDE.md — 39 packages, Fases 9-12)            | ✅ Concluído   |
+| 7     | Setup do app API (NestJS em `templates/starter/apps/api/`)                            | ⏭️ **Próximo** |
 | 8     | Auth + Multi-tenant                                                                   | Pendente       |
 | 9     | Geradores Backend (em `tools/generators/forge-controller/`)                           | Pendente       |
 | 10    | Setup do app Web (Next.js em `templates/starter/apps/web/`)                           | Pendente       |
