@@ -45,13 +45,13 @@ Padrão de uso em projeto cliente:
 
 ```typescript
 // apps/api/src/app.module.ts
-import { AiChatModule } from "@ethos/ai-chat/backend";
+import { AiChatModule } from '@ethos/ai-chat/backend';
 
 @Module({
   imports: [
     AiChatModule.forRoot({
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-      defaultModel: "claude-sonnet-4-5",
+      defaultModel: 'claude-sonnet-4-5',
     }),
   ],
 })
@@ -144,7 +144,7 @@ enum ChatRole {
 // AiChatModule.forRoot config
 type AiChatConfig = {
   anthropicApiKey: string;
-  defaultModel?: "claude-sonnet-4-5" | "claude-haiku-4-5";
+  defaultModel?: 'claude-sonnet-4-5' | 'claude-haiku-4-5';
   maxTokens?: number;
   defaultSystemPrompt?: string;
   rateLimit?: { messagesPerMinute: number; messagesPerDay: number };
@@ -172,14 +172,14 @@ Devs registram tools que a IA pode chamar:
 
 ```typescript
 // apps/api/src/modules/chat/chat.config.ts
-import { defineTool } from "@ethos/ai-chat/backend";
+import { defineTool } from '@ethos/ai-chat/backend';
 
 export const chatTools = [
   defineTool({
-    name: "search_clients",
-    description: "Busca clientes por nome ou email",
+    name: 'search_clients',
+    description: 'Busca clientes por nome ou email',
     schema: z.object({
-      query: z.string().describe("Texto pra buscar"),
+      query: z.string().describe('Texto pra buscar'),
       limit: z.number().default(10),
     }),
     handler: async ({ query, limit }, ctx) => {
@@ -187,8 +187,8 @@ export const chatTools = [
         where: {
           tenantId: ctx.tenantId,
           OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { email: { contains: query, mode: "insensitive" } },
+            { name: { contains: query, mode: 'insensitive' } },
+            { email: { contains: query, mode: 'insensitive' } },
           ],
         },
         take: limit,
@@ -198,8 +198,8 @@ export const chatTools = [
   }),
 
   defineTool({
-    name: "get_revenue",
-    description: "Retorna receita do período",
+    name: 'get_revenue',
+    description: 'Retorna receita do período',
     schema: z.object({
       from: z.string().datetime(),
       to: z.string().datetime(),
@@ -231,7 +231,7 @@ POST   /chat/sessions/:id/messages # Envia mensagem (streaming SSE ou JSON)
 ### React: Hooks
 
 ```tsx
-import { useChatSession, useSendMessage } from "@ethos/ai-chat/react";
+import { useChatSession, useSendMessage } from '@ethos/ai-chat/react';
 
 function MyChat() {
   const { messages, isLoading } = useChatSession(sessionId);
@@ -239,7 +239,9 @@ function MyChat() {
 
   return (
     <>
-      {messages.map((m) => <Message key={m.id} {...m} />)}
+      {messages.map((m) => (
+        <Message key={m.id} {...m} />
+      ))}
       <Input onSubmit={(text) => sendMessage.mutate({ message: text })} />
     </>
   );
@@ -249,20 +251,16 @@ function MyChat() {
 ### React: Componente drop-in
 
 ```tsx
-import { ChatWidget } from "@ethos/ai-chat/react";
+import { ChatWidget } from '@ethos/ai-chat/react';
 
 <ChatWidget
   systemPrompt="Você é um assistente do Pet Shop. Ajude clientes a encontrar produtos e agendar serviços."
-  tools={["search_clients", "search_products", "create_appointment"]}
+  tools={['search_clients', 'search_products', 'create_appointment']}
   position="bottom-right"
   defaultOpen={false}
   greeting="Olá! Como posso ajudar você hoje?"
-  suggestions={[
-    "Mostre meus pedidos recentes",
-    "Quero agendar um banho",
-    "Busque rações premium",
-  ]}
-/>
+  suggestions={['Mostre meus pedidos recentes', 'Quero agendar um banho', 'Busque rações premium']}
+/>;
 ```
 
 ### Considerações de segurança
@@ -360,10 +358,10 @@ class AiRagService {
   // Ingestão
   async ingestDocument(input: {
     title: string;
-    source: "upload" | "url" | "text";
-    content?: string;       // texto direto
-    file?: Buffer;          // upload de arquivo
-    url?: string;           // URL pra fazer fetch e parsear
+    source: 'upload' | 'url' | 'text';
+    content?: string; // texto direto
+    file?: Buffer; // upload de arquivo
+    url?: string; // URL pra fazer fetch e parsear
     metadata?: Record<string, any>;
   }): Promise<Document>;
 
@@ -373,14 +371,14 @@ class AiRagService {
   async search(input: {
     query: string;
     limit?: number;
-    threshold?: number;     // similaridade mínima (0-1)
-    filter?: Record<string, any>;  // filtra por metadata
+    threshold?: number; // similaridade mínima (0-1)
+    filter?: Record<string, any>; // filtra por metadata
   }): Promise<SearchResult[]>;
 
   // Pergunta com resposta gerada
   async ask(input: {
     question: string;
-    contextLimit?: number;  // top-N chunks como contexto
+    contextLimit?: number; // top-N chunks como contexto
     model?: string;
   }): Promise<{ answer: string; sources: SearchResult[] }>;
 }
@@ -416,7 +414,7 @@ POST   /rag/ask                    # Pergunta + resposta gerada
 ### React: Hooks
 
 ```tsx
-import { useRagAsk, useIngestDocument } from "@ethos/ai-rag/react";
+import { useRagAsk, useIngestDocument } from '@ethos/ai-rag/react';
 
 function FaqBot() {
   const ask = useRagAsk();
@@ -487,11 +485,11 @@ A Forge usa Claude Vision como padrão. Tesseract fica disponível pra casos hig
 ```typescript
 class OcrService {
   async extract<T extends z.ZodSchema>(input: {
-    image?: Buffer;          // imagem direta
-    pdf?: Buffer;            // PDF (converte pra imagem internamente)
-    schema: T;               // schema Zod do que extrair
-    instructions?: string;   // hint adicional pro modelo
-    model?: "claude-sonnet-4-5" | "claude-haiku-4-5";
+    image?: Buffer; // imagem direta
+    pdf?: Buffer; // PDF (converte pra imagem internamente)
+    schema: T; // schema Zod do que extrair
+    instructions?: string; // hint adicional pro modelo
+    model?: 'claude-sonnet-4-5' | 'claude-haiku-4-5';
   }): Promise<{ data: z.infer<T>; confidence: number }>;
 
   // Helpers pra docs comuns
@@ -508,7 +506,7 @@ class OcrService {
 
 ```typescript
 const proofOfAddressSchema = z.object({
-  documentType: z.enum(["energy_bill", "water_bill", "phone_bill", "bank_statement"]),
+  documentType: z.enum(['energy_bill', 'water_bill', 'phone_bill', 'bank_statement']),
   issuerName: z.string(),
   customerName: z.string(),
   customerAddress: z.string(),
@@ -519,7 +517,8 @@ const proofOfAddressSchema = z.object({
 const result = await ocr.extract({
   pdf: pdfBuffer,
   schema: proofOfAddressSchema,
-  instructions: "Esse é um comprovante de endereço brasileiro. Extraia o tipo, o emissor, o nome e endereço do cliente, data de emissão e vencimento.",
+  instructions:
+    'Esse é um comprovante de endereço brasileiro. Extraia o tipo, o emissor, o nome e endereço do cliente, data de emissão e vencimento.',
 });
 
 console.log(result.data.customerAddress);
@@ -542,7 +541,7 @@ Todos aceitam multipart com arquivo.
 ### React: Hooks e componentes
 
 ```tsx
-import { useOcr } from "@ethos/ocr/react";
+import { useOcr } from '@ethos/ocr/react';
 
 function ClientFormWithOcr() {
   const ocr = useOcr();
@@ -550,22 +549,22 @@ function ClientFormWithOcr() {
 
   const handleRgUpload = async (file: File) => {
     const result = await ocr.mutateAsync({
-      type: "rg",
+      type: 'rg',
       file,
     });
 
     // Auto-preenche o form
-    form.setValue("name", result.data.fullName);
-    form.setValue("cpf", result.data.cpf);
-    form.setValue("birthDate", result.data.birthDate);
+    form.setValue('name', result.data.fullName);
+    form.setValue('cpf', result.data.cpf);
+    form.setValue('birthDate', result.data.birthDate);
   };
 
   return (
     <FormBuilder
       fields={[
-        { name: "name", label: "Nome", type: "text" },
-        { name: "cpf", label: "CPF", type: "cpf" },
-        { name: "birthDate", label: "Data de nascimento", type: "date" },
+        { name: 'name', label: 'Nome', type: 'text' },
+        { name: 'cpf', label: 'CPF', type: 'cpf' },
+        { name: 'birthDate', label: 'Data de nascimento', type: 'date' },
       ]}
       additionalActions={
         <FileUpload
@@ -606,14 +605,14 @@ Integração com WhatsApp via Z-API (provider brasileiro econômico) ou WhatsApp
 
 ### Z-API vs WhatsApp Business API (WABA)
 
-| Aspecto | Z-API | WABA (Meta) |
-|---------|-------|-------------|
-| Custo inicial | Baixo (~R$ 99/mês) | Médio (setup + verificação) |
-| Custo por msg | Sem custo extra | Variável por conversa |
-| Aprovação | Imediata | 1-2 semanas (Meta verifica) |
-| Templates | Não obrigatório | Obrigatório pra mensagens iniciadas pelo negócio |
-| Estabilidade | Boa, mas não-oficial | Oficial, garantida por Meta |
-| Volume | Médio (recomendado <1k/dia) | Sem limite prático |
+| Aspecto       | Z-API                       | WABA (Meta)                                      |
+| ------------- | --------------------------- | ------------------------------------------------ |
+| Custo inicial | Baixo (~R$ 99/mês)          | Médio (setup + verificação)                      |
+| Custo por msg | Sem custo extra             | Variável por conversa                            |
+| Aprovação     | Imediata                    | 1-2 semanas (Meta verifica)                      |
+| Templates     | Não obrigatório             | Obrigatório pra mensagens iniciadas pelo negócio |
+| Estabilidade  | Boa, mas não-oficial        | Oficial, garantida por Meta                      |
+| Volume        | Médio (recomendado <1k/dia) | Sem limite prático                               |
 
 A Forge suporta os dois. Cliente escolhe baseado em necessidade. Por padrão, Z-API pra projetos simples, WABA pra projetos enterprise.
 
@@ -694,17 +693,17 @@ enum MessageStatus { queued sent delivered read failed }
 ```typescript
 class WhatsappService {
   async sendText(input: {
-    to: string;              // E.164 (+5562...)
+    to: string; // E.164 (+5562...)
     message: string;
-    contactId?: string;      // pra associar a contato existente
+    contactId?: string; // pra associar a contato existente
   }): Promise<WhatsappMessage>;
 
   async sendMedia(input: {
     to: string;
-    type: "image" | "audio" | "video" | "document";
+    type: 'image' | 'audio' | 'video' | 'document';
     url: string;
     caption?: string;
-    filename?: string;       // pra documents
+    filename?: string; // pra documents
   }): Promise<WhatsappMessage>;
 
   async sendTemplate(input: {
@@ -723,8 +722,13 @@ class WhatsappService {
   async handleIncoming(payload: any): Promise<void>;
 
   // Sessões
-  async listConversations(tenantId: string, filter?: ConversationFilter): Promise<WhatsappConversation[]>;
-  async getConversation(id: string): Promise<WhatsappConversation & { messages: WhatsappMessage[] }>;
+  async listConversations(
+    tenantId: string,
+    filter?: ConversationFilter,
+  ): Promise<WhatsappConversation[]>;
+  async getConversation(
+    id: string,
+  ): Promise<WhatsappConversation & { messages: WhatsappMessage[] }>;
   async closeConversation(id: string): Promise<void>;
   async assignConversation(id: string, userId: string): Promise<void>;
 }
@@ -735,7 +739,7 @@ class WhatsappService {
 Recebe mensagens entrantes do provider (Z-API ou Meta). Padrão:
 
 ```typescript
-@Controller("webhooks/whatsapp")
+@Controller('webhooks/whatsapp')
 export class WhatsappWebhookController {
   constructor(private whatsapp: WhatsappService) {}
 
@@ -745,7 +749,7 @@ export class WhatsappWebhookController {
     this.whatsapp.validateWebhookSignature(payload, headers);
 
     // Processa em background (BullMQ)
-    await this.whatsappQueue.add("process-incoming", payload);
+    await this.whatsappQueue.add('process-incoming', payload);
 
     return { ok: true };
   }
@@ -765,9 +769,9 @@ export class WhatsappBotService {
     private aiChat: AiChatService,
   ) {}
 
-  @OnEvent("whatsapp.message.received")
+  @OnEvent('whatsapp.message.received')
   async handleIncoming(message: WhatsappMessage) {
-    if (message.direction !== "inbound") return;
+    if (message.direction !== 'inbound') return;
 
     const session = await this.aiChat.getOrCreateSession({
       tenantId: message.tenantId,
@@ -777,7 +781,7 @@ export class WhatsappBotService {
     const response = await this.aiChat.sendMessage({
       sessionId: session.id,
       message: message.content,
-      tools: ["search_clients", "create_appointment", "..."],
+      tools: ['search_clients', 'create_appointment', '...'],
     });
 
     await this.whatsapp.sendText({
@@ -791,17 +795,17 @@ export class WhatsappBotService {
 ### React: Painel de conversas
 
 ```tsx
-import { ConversationsList, ConversationView } from "@ethos/whatsapp/react";
+import { ConversationsList, ConversationView } from '@ethos/whatsapp/react';
 
 function InboxPage() {
   const [selectedId, setSelectedId] = useState<string>();
 
   return (
-    <div className="grid grid-cols-[300px_1fr] h-screen">
+    <div className="grid h-screen grid-cols-[300px_1fr]">
       <ConversationsList
         onSelect={setSelectedId}
         selectedId={selectedId}
-        filters={{ status: "open" }}
+        filters={{ status: 'open' }}
       />
       {selectedId && <ConversationView conversationId={selectedId} />}
     </div>
@@ -895,11 +899,20 @@ class GoogleCalendarApi {
 
 class GoogleDriveApi {
   async listFiles(input: { folderId?: string; query?: string }): Promise<DriveFile[]>;
-  async uploadFile(input: { name: string; content: Buffer; mimeType: string; folderId?: string }): Promise<DriveFile>;
+  async uploadFile(input: {
+    name: string;
+    content: Buffer;
+    mimeType: string;
+    folderId?: string;
+  }): Promise<DriveFile>;
   async downloadFile(fileId: string): Promise<Buffer>;
   async deleteFile(fileId: string): Promise<void>;
   async createFolder(input: { name: string; parentId?: string }): Promise<DriveFile>;
-  async shareFile(input: { fileId: string; email: string; role: "reader" | "writer" | "commenter" }): Promise<void>;
+  async shareFile(input: {
+    fileId: string;
+    email: string;
+    role: 'reader' | 'writer' | 'commenter';
+  }): Promise<void>;
 }
 
 class GoogleSheetsApi {
@@ -936,7 +949,7 @@ PUT    /google/sheets/:id/values/:range
 ### React: Hooks
 
 ```tsx
-import { useGoogleConnection, useCalendarEvents } from "@ethos/google/react";
+import { useGoogleConnection, useCalendarEvents } from '@ethos/google/react';
 
 function CalendarSync() {
   const { isConnected, connect, disconnect } = useGoogleConnection();
@@ -1022,7 +1035,10 @@ class N8nService {
 ```typescript
 @Injectable()
 export class OrderService extends BaseOrderService {
-  constructor(prisma: PrismaService, private n8n: N8nService) {
+  constructor(
+    prisma: PrismaService,
+    private n8n: N8nService,
+  ) {
     super(prisma);
   }
 
@@ -1031,7 +1047,7 @@ export class OrderService extends BaseOrderService {
 
     // Triggar workflow assíncrono
     await this.n8n.triggerWorkflow({
-      workflowId: "order-created-flow",
+      workflowId: 'order-created-flow',
       payload: { order, userId },
     });
 
@@ -1046,15 +1062,15 @@ Forge emite eventos NestJS pra eventos do sistema. `@ethos/n8n` pode escutar e t
 
 ```typescript
 // configuração no projeto cliente
-n8n.on("client.created", "workflow-id-1");
-n8n.on("order.completed", "workflow-id-2");
-n8n.on("payment.received", "workflow-id-3");
+n8n.on('client.created', 'workflow-id-1');
+n8n.on('order.completed', 'workflow-id-2');
+n8n.on('payment.received', 'workflow-id-3');
 ```
 
 ### React: Componente de configuração
 
 ```tsx
-import { N8nWorkflowSelect, N8nExecutionsList } from "@ethos/n8n/react";
+import { N8nWorkflowSelect, N8nExecutionsList } from '@ethos/n8n/react';
 
 function AutomationsPage() {
   return (
@@ -1184,19 +1200,19 @@ enum SubscriptionStatus { active past_due canceled paused }
 class PaymentsService {
   // One-shot payment
   async createPayment(input: {
-    provider?: PaymentProvider;  // se omitido, usa default
-    amount: number;              // em centavos
+    provider?: PaymentProvider; // se omitido, usa default
+    amount: number; // em centavos
     method: PaymentMethod;
     customerId?: string;
     description?: string;
     metadata?: Record<string, any>;
 
     // Específicos por método
-    cardToken?: string;          // pra cartão
+    cardToken?: string; // pra cartão
     cardInstallments?: number;
-    pixExpiresAt?: Date;         // pra pix
+    pixExpiresAt?: Date; // pra pix
     boletoExpiresAt?: Date;
-    splits?: PaymentSplit[];     // pra marketplace
+    splits?: PaymentSplit[]; // pra marketplace
   }): Promise<Payment>;
 
   async getPayment(id: string): Promise<Payment>;
@@ -1223,7 +1239,7 @@ class PaymentsService {
 ```typescript
 // projeto cliente
 PaymentsModule.forRoot({
-  defaultProvider: "mercadopago",
+  defaultProvider: 'mercadopago',
   providers: {
     mercadopago: { accessToken: process.env.MP_ACCESS_TOKEN },
     stripe: { secretKey: process.env.STRIPE_SECRET_KEY },
@@ -1257,13 +1273,13 @@ interface PaymentProvider {
 ### React: Componente de checkout
 
 ```tsx
-import { Checkout } from "@ethos/payments/react";
+import { Checkout } from '@ethos/payments/react';
 
 function CheckoutPage() {
   return (
     <Checkout
-      amount={15990}             // R$ 159,90 em centavos
-      methods={["credit_card", "pix", "boleto"]}
+      amount={15990} // R$ 159,90 em centavos
+      methods={['credit_card', 'pix', 'boleto']}
       provider="mercadopago"
       customer={{
         email: user.email,
@@ -1367,7 +1383,7 @@ class ErpBridgeService {
 
 ```typescript
 ErpBridgeModule.forRoot({
-  defaultProvider: "bling",
+  defaultProvider: 'bling',
   providers: {
     bling: { apiKey: process.env.BLING_API_KEY },
     tiny: { token: process.env.TINY_TOKEN },
@@ -1400,7 +1416,7 @@ function mapProductFromBling(bling: BlingProduct): Product {
     price: parseFloat(bling.preco) * 100, // converte pra centavos
     stock: bling.estoque?.saldoVirtualTotal ?? 0,
     category: bling.categoria?.descricao,
-    metadata: { source: "bling", originalData: bling },
+    metadata: { source: 'bling', originalData: bling },
   };
 }
 ```
@@ -1408,13 +1424,12 @@ function mapProductFromBling(bling: BlingProduct): Product {
 ### React: Componentes
 
 ```tsx
-import { ErpStatus, ErpSyncButton } from "@ethos/erp-bridge/react";
+import { ErpStatus, ErpSyncButton } from '@ethos/erp-bridge/react';
 
 function IntegrationsPage() {
   return (
     <>
-      <ErpStatus />  {/* Mostra ERP ativo, última sync, status */}
-
+      <ErpStatus /> {/* Mostra ERP ativo, última sync, status */}
       <ErpSyncButton type="products">Sincronizar produtos</ErpSyncButton>
       <ErpSyncButton type="orders">Sincronizar pedidos</ErpSyncButton>
     </>
@@ -1432,18 +1447,704 @@ function IntegrationsPage() {
 
 ---
 
+---
+
+# Pacotes adicionais (pós-v1)
+
+> Os 8 pacotes acima compõem a v1.0 da Forge. Os 15 abaixo são **demand-driven** — só viram código quando 3 projetos cliente diferentes pedem (regra dos 3 — ver `13-MANUTENCAO-EVOLUCAO.md` §4-§5). Estão documentados aqui pra servir de referência arquitetural quando a hora chegar; não são roadmap fixo.
+
+---
+
+## 9. `@ethos/whisper` — Transcrição de Áudio
+
+### O que faz
+
+Transcrição de áudio para texto via Whisper (OpenAI API ou self-hosted). Suporta múltiplos formatos (mp3, m4a, wav, ogg, webm), idiomas, timestamps, e diarização (identificação de falantes) opcional.
+
+### Casos de uso típicos
+
+- Atendimento: gravar ligação → transcrever → indexar no `@ethos/ai-rag`
+- Consultórios: gravar consulta → transcrever → resumir via Claude
+- Reuniões: upload do áudio → ata automática
+- Recados WhatsApp: áudio do cliente → transcrição na conversation view
+
+### Providers suportados
+
+- **OpenAI Whisper API** (default — sem infra)
+- **Whisper self-hosted** (custo zero por minuto, requer GPU)
+- **AssemblyAI** (alternativa premium com diarização robusta)
+
+### API resumida
+
+```typescript
+class WhisperService {
+  async transcribe(input: {
+    audio: Buffer | string; // arquivo ou URL
+    language?: string; // 'pt', 'en', 'auto'
+    timestamps?: boolean;
+    diarization?: boolean;
+    prompt?: string; // contexto pra melhorar precisão
+  }): Promise<TranscriptionResult>;
+
+  async transcribeAndSummarize(input: { audio: Buffer; summaryPrompt?: string }): Promise<{
+    transcription: string;
+    summary: string;
+  }>;
+}
+```
+
+### Considerações
+
+- **Tamanho:** OpenAI limita 25MB. Arquivos maiores: chunking automático.
+- **Custo:** OpenAI ~$0.006/min. 100h/mês ~ $36.
+- **PII:** transcrições podem conter dados sensíveis. Mesmo flow LGPD que `@ethos/ocr`.
+- **Async:** transcrições longas (>5 min) sempre via `@ethos/queue`.
+
+---
+
+## 10. `@ethos/maps` — Mapas e Geolocalização
+
+### O que faz
+
+Mapas, geocoding (endereço → coordenadas), reverse geocoding (coordenadas → endereço), cálculo de rotas, raio de cobertura, distância entre pontos. Adapter pattern entre Google Maps Platform e Mapbox.
+
+### Casos de uso típicos
+
+- Delivery: mostrar pedidos em mapa, calcular rota otimizada
+- Imobiliária: localização de imóveis com filtro por raio
+- Frota: rastreamento em tempo real
+- Atendimento domiciliar: roteirização do dia
+- Validar endereço de cliente no cadastro (CEP → endereço completo)
+
+### Providers suportados
+
+- **Google Maps Platform** (default — mais completo, custo médio-alto)
+- **Mapbox** (alternativa visualmente customizável)
+- **OpenCage** (geocoding apenas, custo baixíssimo)
+
+### API resumida
+
+```typescript
+class MapsService {
+  async geocode(address: string): Promise<{ lat: number; lng: number; formatted: string }>;
+  async reverseGeocode(lat: number, lng: number): Promise<Address>;
+  async distance(
+    from: LatLng,
+    to: LatLng,
+    mode?: 'driving' | 'walking' | 'bicycling',
+  ): Promise<DistanceResult>;
+  async optimizeRoute(input: {
+    origin: LatLng;
+    destinations: LatLng[];
+    returnToOrigin?: boolean;
+  }): Promise<RouteResult>;
+  async cep(cep: string): Promise<Address>; // ViaCEP wrapper, gratuito
+}
+```
+
+### React
+
+```tsx
+import { Map, Marker, RouteOverlay, AddressInput } from '@ethos/maps/react';
+
+<Map center={[-23.55, -46.63]} zoom={12}>
+  <Marker position={[-23.55, -46.63]} label="Cliente" />
+  <RouteOverlay from={origin} to={destination} />
+</Map>;
+```
+
+### Considerações
+
+- **Custo:** Google cobra por request. Cache agressivo (resultados de geocode são imutáveis pra mesmo input).
+- **API key no frontend:** Maps JS precisa de key exposta — restringir por domínio + HTTP referer.
+- **CEP grátis:** ViaCEP é gratuito e ilimitado, usar pra preencher form de endereço sem custo.
+
+---
+
+## 11. `@ethos/sms` — SMS Transacional
+
+### O que faz
+
+Envio de SMS para 2FA, notificações críticas, recuperação de senha, lembretes de agendamento. Adapter pattern: Twilio, Zenvia (BR), AWS SNS.
+
+### Casos de uso típicos
+
+- 2FA login (alternativa ao TOTP)
+- Lembrete de agendamento 24h antes
+- Confirmação de pedido entregue
+- Notificação crítica que email pode não chegar a tempo
+
+### API resumida
+
+```typescript
+class SmsService {
+  async send(input: { to: string; message: string; tag?: string }): Promise<SmsResult>;
+  async sendOtp(input: { to: string; code: string; expiresInMin?: number }): Promise<SmsResult>;
+  async sendTemplate(input: {
+    to: string;
+    template: string;
+    vars: Record<string, string>;
+  }): Promise<SmsResult>;
+}
+```
+
+### Considerações
+
+- **Custo BR:** Zenvia ~R$ 0,08-0,12 por SMS. Em volume, somar.
+- **Opt-in:** SMS marketing exige consentimento explícito (LGPD + ANATEL).
+- **Rate limit:** todo provider limita por número/hora. Forge respeita.
+- **Compete com WhatsApp:** ~80% dos casos de uso são melhor via WhatsApp. SMS fica pra fallback ou 2FA.
+
+---
+
+## 12. `@ethos/signature` — Assinatura Digital
+
+### O que faz
+
+Coleta de assinatura eletrônica em documentos (contratos, autorizações, termos) com validade jurídica MP 2.200-2/2001. Adapter pattern: D4Sign, ClickSign, DocuSign, Autentique.
+
+### Casos de uso típicos
+
+- Cliente novo assina contrato online
+- Autorização de tratamento (estética, médica)
+- Aceite de orçamento
+- Contratos recorrentes (mensalidade)
+
+### API resumida
+
+```typescript
+class SignatureService {
+  async createDocument(input: {
+    title: string;
+    file: Buffer;
+    signers: Signer[];
+    deadline?: Date;
+    authMethod?: 'email' | 'sms' | 'whatsapp' | 'selfie';
+  }): Promise<SignatureDocument>;
+
+  async getStatus(documentId: string): Promise<SignatureStatus>;
+  async download(documentId: string): Promise<Buffer>; // PDF assinado + log
+  async cancel(documentId: string, reason: string): Promise<void>;
+
+  // Webhook quando todos assinaram
+  async handleWebhook(provider: SignatureProvider, payload: any): Promise<void>;
+}
+```
+
+### Considerações
+
+- **Validade jurídica:** providers já cumprem MP 2.200-2 (assinatura eletrônica avançada). Pra assinatura qualificada (ICP-Brasil), provider específico (D4Sign Premium).
+- **Auditoria:** PDF final inclui log de IP, timestamp, método de auth — Forge persiste hash do PDF assinado.
+- **Custo:** ~R$ 1-3 por documento dependendo do provider.
+
+---
+
+## 13. `@ethos/nfse` — Nota Fiscal de Serviço Eletrônica
+
+### O que faz
+
+Emissão de NFS-e municipais. **Cada município tem seu próprio webservice** (nightmare brasileiro). Forge integra via providers que abstraem essa diversidade: Focus NFe, NFe.io, eNotas.
+
+### Casos de uso típicos
+
+- Prestador de serviço (consultoria, estética, advocacia, mecânica) emite nota a cada venda
+- Cancelamento de NFS-e
+- Consulta de notas emitidas
+- Geração de PDF da nota
+
+### API resumida
+
+```typescript
+class NfseService {
+  async emit(input: {
+    customer: { name: string; document: string; email?: string; address: Address };
+    services: NfseServiceItem[];
+    municipalServiceCode: string; // CNAE/Lista de Serviços
+    cnae: string;
+    issRetained?: boolean;
+  }): Promise<NfseDocument>;
+
+  async cancel(nfseId: string, reason: string): Promise<NfseDocument>;
+  async list(filters: NfseFilter): Promise<NfseDocument[]>;
+  async downloadPdf(nfseId: string): Promise<Buffer>;
+  async downloadXml(nfseId: string): Promise<Buffer>;
+}
+```
+
+### Considerações
+
+- **Heterogeneidade municipal:** São Paulo, Rio, Goiânia, BH — cada um diferente. Provider abstrai, mas pode falhar pra municípios obscuros.
+- **Certificado digital A1:** cliente precisa ter ou Forge guarda o pfx encriptado (depende do provider).
+- **Validação prévia:** sempre validar dados antes de emitir — NFS-e cancelada gera questionamento fiscal.
+- **Retentativas:** webservices municipais caem com frequência. Filas + retry + alertas obrigatórios.
+
+---
+
+## 14. `@ethos/marketplaces` — Mercado Livre, Shopee, Amazon
+
+### O que faz
+
+Integração com marketplaces brasileiros: anúncios, pedidos, estoque sincronizados. Adapter pattern: Mercado Livre API, Shopee Open Platform, Amazon SP-API.
+
+### Casos de uso típicos
+
+- Vendedor cadastra produto uma vez na Forge → publica nos 3 marketplaces
+- Pedido entra em qualquer marketplace → aparece no dashboard unificado
+- Estoque atualizado em uma operação propaga pros 3
+- Status de envio sincronizado
+
+### API resumida
+
+```typescript
+class MarketplacesService {
+  async publishProduct(input: {
+    product: ProductInput;
+    marketplaces: MarketplaceProvider[]; // ['mercadolivre', 'shopee']
+    perMarketplaceOverrides?: { mercadolivre?: MlOverride; shopee?: ShopeeOverride };
+  }): Promise<PublishResult>;
+
+  async listOrders(input: {
+    from: Date;
+    to: Date;
+    marketplaces?: MarketplaceProvider[];
+  }): Promise<MarketplaceOrder[]>;
+  async syncStock(productId: string, quantity: number): Promise<SyncResult>;
+  async updateOrderStatus(orderId: string, status: OrderStatus): Promise<void>;
+}
+```
+
+### Considerações
+
+- **Approvals e categorias:** cada marketplace tem regras próprias de categoria, foto, descrição. Validações específicas.
+- **Comissões:** ML cobra 10-19%, Shopee 14-20%. Considerar no preço.
+- **OAuth:** ML e Shopee usam OAuth com refresh longo (6 meses). Renovação automática.
+- **Volume:** APIs têm rate limits agressivos. BullMQ obrigatório.
+- **Integra com `@ethos/erp-bridge`:** estoque do ERP é fonte de verdade, marketplaces consomem.
+
+---
+
+## 15. `@ethos/social` — Redes Sociais (Instagram, TikTok, Facebook)
+
+### O que faz
+
+Agendamento de posts, leitura de comentários/DMs, métricas de engajamento. Foco em Instagram Graph API, TikTok Business API, Facebook Graph.
+
+### Casos de uso típicos
+
+- Painel pra cliente agendar posts da semana em uma só interface
+- Inbox unificado de DMs Instagram + Facebook
+- Dashboard de métricas (alcance, engajamento, seguidores)
+- Resposta automática a comentários via `@ethos/ai-chat`
+
+### API resumida
+
+```typescript
+class SocialService {
+  async schedulePost(input: {
+    platforms: SocialPlatform[]; // ['instagram', 'tiktok']
+    media: Buffer[];
+    caption: string;
+    scheduledAt: Date;
+    hashtags?: string[];
+  }): Promise<ScheduledPost>;
+
+  async getInsights(input: {
+    platform: SocialPlatform;
+    from: Date;
+    to: Date;
+  }): Promise<InsightsReport>;
+  async listMessages(platform: SocialPlatform, filters?: MessageFilter): Promise<SocialMessage[]>;
+  async replyMessage(messageId: string, content: string): Promise<void>;
+}
+```
+
+### Considerações
+
+- **Aprovação Meta/TikTok:** APIs Business exigem app review — semanas/meses pra aprovar.
+- **OAuth complexo:** scopes por feature, renovação manual frequente.
+- **Limites de quota:** Meta limita drasticamente. Plano de fallback gracioso.
+- **Stories e Reels:** APIs limitadas — alguns formatos ainda não publicáveis via API (em 2026).
+
+---
+
+## 16. `@ethos/email-marketing` — Email Marketing
+
+### O que faz
+
+Campanhas de email marketing (≠ transacional do `@ethos/email`). Listas, segmentação, automações (drip, boas-vindas), templates visuais, métricas. Adapter pattern: Mailchimp, Brevo (ex-SendinBlue), RD Station, ActiveCampaign.
+
+### Casos de uso típicos
+
+- Newsletter mensal pros clientes
+- Campanha de aniversário (cupom no aniversário do cliente)
+- Drip de nurturing pós-cadastro
+- Reativação de cliente inativo
+
+### API resumida
+
+```typescript
+class EmailMarketingService {
+  // Listas
+  async syncContact(input: {
+    email: string;
+    tags?: string[];
+    metadata?: Record<string, any>;
+  }): Promise<void>;
+  async unsubscribe(email: string): Promise<void>;
+
+  // Campanhas
+  async createCampaign(input: CampaignInput): Promise<Campaign>;
+  async sendCampaign(campaignId: string): Promise<void>;
+  async getCampaignStats(campaignId: string): Promise<CampaignStats>;
+
+  // Automações
+  async triggerAutomation(input: {
+    automationId: string;
+    contactEmail: string;
+    payload?: any;
+  }): Promise<void>;
+}
+```
+
+### Considerações
+
+- **Sync bidirecional:** unsubscribe no provider precisa refletir na Forge e vice-versa.
+- **Custo por contato:** todos providers cobram por número de contatos ativos. Cliente decide qual.
+- **LGPD:** opt-in obrigatório. Forge persiste prova de consentimento.
+- **Não confundir com `@ethos/email`:** transacional (1-pra-1, alta entrega, sem unsubscribe) é separado.
+
+---
+
+## 17. `@ethos/scheduling` — Agendamento Avançado
+
+### O que faz
+
+Sistema de agendamento tipo Calendly: slots, blackouts (períodos indisponíveis), buffers entre atendimentos, regras de antecedência mínima, lembretes automáticos. Sincronização com Google Calendar via `@ethos/google`.
+
+### Casos de uso típicos
+
+- Estética/Barbearia: cliente agenda horário online
+- Consultório: pacientes marcam consulta sem ligar
+- Aulas particulares: instrutor publica disponibilidade
+- Reuniões comerciais: lead agenda demo
+
+### API resumida
+
+```typescript
+class SchedulingService {
+  // Disponibilidade
+  async setAvailability(input: {
+    professionalId: string;
+    rules: AvailabilityRule[];
+  }): Promise<void>;
+  async getSlots(input: {
+    professionalId: string;
+    serviceId: string;
+    from: Date;
+    to: Date;
+  }): Promise<Slot[]>;
+
+  // Agendamentos
+  async book(input: {
+    slotId: string;
+    customer: CustomerInput;
+    notes?: string;
+  }): Promise<Appointment>;
+
+  async reschedule(appointmentId: string, newSlotId: string): Promise<Appointment>;
+  async cancel(appointmentId: string, reason?: string): Promise<Appointment>;
+
+  // Lembretes (integra com @ethos/whatsapp + @ethos/email + @ethos/sms)
+  async sendReminders(): Promise<void>; // cron job
+}
+```
+
+### Schema Prisma
+
+```prisma
+model SchedulingService {
+  id          String  @id @default(cuid())
+  tenantId    String
+  name        String
+  durationMin Int
+  bufferMin   Int     @default(0)
+  priceCents  Int?
+}
+
+model AvailabilityRule {
+  id              String  @id @default(cuid())
+  professionalId  String
+  weekday         Int     // 0=domingo
+  startTime       String  // "09:00"
+  endTime         String  // "18:00"
+}
+
+model Appointment {
+  id              String  @id @default(cuid())
+  tenantId        String
+  professionalId  String
+  serviceId       String
+  customerId      String
+  startAt         DateTime
+  endAt           DateTime
+  status          AppointmentStatus
+}
+```
+
+### Considerações
+
+- **Integra com `@ethos/google`:** slots respeitam calendário Google do profissional (agenda externa bloqueia).
+- **Webhooks:** mudanças no Google Calendar disparam invalidação de slots.
+- **No-show:** policy de bloqueio após N no-shows consecutivos.
+
+---
+
+## 18. `@ethos/iot-telemetry` — IoT e Telemetria
+
+### O que faz
+
+Coleta de dados de dispositivos IoT/sensores via MQTT, HTTP polling, ou webhook. Armazenamento time-series, dashboards de leitura. Adapter pattern: HiveMQ, AWS IoT Core, EMQX self-hosted.
+
+### Casos de uso típicos
+
+- Sensor de temperatura em câmara fria de restaurante
+- Monitoramento de máquinas em chão de fábrica
+- Rastreamento veicular (frota)
+- Sensores ambientais (água, energia)
+
+### API resumida
+
+```typescript
+class TelemetryService {
+  async registerDevice(input: {
+    externalId: string;
+    type: string;
+    metadata?: any;
+  }): Promise<Device>;
+  async ingest(input: { deviceId: string; readings: Reading[] }): Promise<void>;
+
+  async query(input: {
+    deviceId?: string;
+    metric: string;
+    from: Date;
+    to: Date;
+    aggregation?: 'avg' | 'sum' | 'min' | 'max';
+    interval?: '1m' | '5m' | '1h' | '1d';
+  }): Promise<TimeSeriesPoint[]>;
+
+  async setAlert(input: {
+    deviceId: string;
+    metric: string;
+    condition: AlertCondition;
+  }): Promise<Alert>;
+}
+```
+
+### Considerações
+
+- **Volume:** time-series cresce rápido. TimescaleDB (extension Postgres) ou retention policy agressiva.
+- **Latência:** MQTT broker dedicado. Não passar por Postgres direto.
+- **Edge cases:** devices offline, mensagens perdidas, sync de relógio. Forge não resolve tudo — documenta.
+
+---
+
+## 19. `@ethos/crm-bridge` — Integração com CRMs
+
+### O que faz
+
+Sincronização bidirecional com CRMs externos: RD CRM, HubSpot, Pipedrive, Salesforce. Útil quando cliente já usa CRM e quer Forge consumir/enriquecer dados.
+
+### Casos de uso típicos
+
+- Lead entra na Forge → cria contato no HubSpot automaticamente
+- Pipeline do vendedor (Pipedrive) reflete no dashboard Forge
+- Notas/atividades sincronizadas
+
+### API resumida
+
+```typescript
+class CrmBridgeService {
+  async syncContact(input: { email: string; data: ContactInput }): Promise<CrmContact>;
+  async listDeals(filters?: DealFilter): Promise<CrmDeal[]>;
+  async updateDealStage(dealId: string, stageId: string): Promise<CrmDeal>;
+  async logActivity(input: ActivityInput): Promise<void>;
+}
+```
+
+---
+
+## 20. `@ethos/contabilidade` — Integração Contábil
+
+### O que faz
+
+Integração com plataformas contábeis brasileiras: Conta Azul, Asaas, Omie (parcial), QuickBooks. Sincroniza receitas, despesas, contas a pagar/receber, conciliação bancária.
+
+### Casos de uso típicos
+
+- Pagamentos no Forge geram lançamento contábil automático
+- Conciliação bancária consolidada
+- Fluxo de caixa unificado
+- DRE simplificada no dashboard
+
+### Considerações
+
+- **Sobreposição com `@ethos/payments`:** payments processa, contabilidade contabiliza. Distinção clara.
+- **Plano de contas:** cada cliente tem seu. Mapeamento configurável.
+
+---
+
+## 21. `@ethos/pix-direto` — Pix via PSP
+
+### O que faz
+
+Pix direto via Provedor de Serviços de Pagamento (PSP) bancário (Itaú, Bradesco, Sicoob, Banco do Brasil), sem passar por gateway. Cobranças com QR code, webhook de recebimento, devolução.
+
+### Por que separado de `@ethos/payments`
+
+`@ethos/payments` usa Mercado Pago/Stripe/PagSeguro como gateway — taxa por transação. `@ethos/pix-direto` conversa direto com banco do cliente — sem gateway, taxa do banco apenas (geralmente menor pra grande volume).
+
+### Casos de uso típicos
+
+- Cliente que tem conta PJ em banco com API Pix (Itaú, Sicoob, BB) e quer eliminar gateway
+- Marketplace com volume alto onde 2-3% de gateway pesa
+
+### API resumida
+
+```typescript
+class PixDirectService {
+  async createCharge(input: {
+    amountCents: number;
+    expiresInMin: number;
+    payerInfo?: PayerInfo;
+  }): Promise<PixCharge>;
+  async getCharge(txId: string): Promise<PixCharge>;
+  async refund(txId: string, amountCents?: number): Promise<PixRefund>;
+  async generateQrCode(txId: string): Promise<{ image: string; emv: string }>;
+}
+```
+
+### Considerações
+
+- **Certificado mTLS:** PSPs exigem certificado por cliente. Setup manual.
+- **Cada banco diferente:** apesar do Pix ser padrão Bacen, cada PSP tem variações na API.
+- **Webhook obrigatório:** banco notifica quando Pix entra. Sem webhook, sistema não sabe.
+
+---
+
+## 22. `@ethos/loyalty` — Cashback, Pontos e Cupons
+
+### O que faz
+
+Sistema de fidelidade: pontuação por compra, regras de acúmulo, resgate em produtos/desconto, cupons promocionais (% ou valor fixo, expiração, condições).
+
+### Casos de uso típicos
+
+- Restaurante: 1 ponto a cada R$ 10 → 100 pontos = sobremesa grátis
+- Varejo: cashback de 5% no app
+- Estética: pacote de 10 sessões com 10% off + 1 grátis
+- Aniversário do cliente: cupom automático
+
+### API resumida
+
+```typescript
+class LoyaltyService {
+  async earnPoints(input: {
+    customerId: string;
+    orderId: string;
+    amountCents: number;
+  }): Promise<PointsTransaction>;
+  async redeem(input: { customerId: string; rewardId: string }): Promise<RedemptionResult>;
+  async getBalance(customerId: string): Promise<{ points: number; cashbackCents: number }>;
+
+  async createCoupon(input: CouponInput): Promise<Coupon>;
+  async validateCoupon(code: string, context: CouponContext): Promise<CouponValidation>;
+  async useCoupon(code: string, orderId: string): Promise<CouponUsage>;
+}
+```
+
+---
+
+## 23. `@ethos/reviews` — Avaliações e Reputação
+
+### O que faz
+
+Coleta de reviews internos (no sistema do cliente) + sincronização com Google My Business + monitoramento de menções. Resposta a avaliações, alertas de avaliação negativa, métricas de NPS.
+
+### Casos de uso típicos
+
+- Estética/Barbearia/Restaurante: cliente termina serviço → solicita review automático
+- Cliente avalia → publica em Google + WhatsApp do dono
+- Avaliação negativa → alerta imediato pro gestor
+- NPS trimestral automático
+
+### API resumida
+
+```typescript
+class ReviewsService {
+  async requestReview(input: {
+    customerId: string;
+    channel: 'whatsapp' | 'email' | 'sms';
+    publishToGoogle?: boolean;
+  }): Promise<ReviewRequest>;
+
+  async submitReview(input: {
+    requestId: string;
+    rating: number;
+    comment?: string;
+  }): Promise<Review>;
+  async listReviews(filters?: ReviewFilter): Promise<Review[]>;
+  async respondToReview(reviewId: string, response: string): Promise<void>;
+
+  // Google My Business sync
+  async syncGoogleReviews(): Promise<SyncReport>;
+
+  // NPS
+  async sendNpsCampaign(input: NpsCampaignInput): Promise<NpsCampaign>;
+}
+```
+
+### Considerações
+
+- **Google My Business API:** requer verificação do estabelecimento. Setup manual.
+- **Solicitação responsável:** não enviar review request 5 vezes — opt-out funciona.
+- **Resposta a review negativo:** template + revisão humana sempre.
+
+---
+
 ## Resumo dos pacotes
 
-| Pacote | Foco | Complexidade |
-|--------|------|--------------|
-| `@ethos/ai-chat` | Chat com Claude + tools | Média |
-| `@ethos/ai-rag` | RAG sobre docs do tenant | Média-alta |
-| `@ethos/ocr` | Extração de docs via Vision | Baixa-média |
-| `@ethos/whatsapp` | WhatsApp via Z-API/WABA | Alta |
-| `@ethos/google` | Calendar/Drive/Sheets | Média |
-| `@ethos/n8n` | Wrapper de workflows | Baixa |
-| `@ethos/payments` | MP/Stripe/PagSeguro unificados | Alta |
-| `@ethos/erp-bridge` | Bling/Tiny/Omie unificados | Alta |
+### v1 (8 pacotes — todos implementados na v1.0)
+
+| Pacote              | Foco                           | Complexidade |
+| ------------------- | ------------------------------ | ------------ |
+| `@ethos/ai-chat`    | Chat com Claude + tools        | Média        |
+| `@ethos/ai-rag`     | RAG sobre docs do tenant       | Média-alta   |
+| `@ethos/ocr`        | Extração de docs via Vision    | Baixa-média  |
+| `@ethos/whatsapp`   | WhatsApp via Z-API/WABA        | Alta         |
+| `@ethos/google`     | Calendar/Drive/Sheets          | Média        |
+| `@ethos/n8n`        | Wrapper de workflows           | Baixa        |
+| `@ethos/payments`   | MP/Stripe/PagSeguro unificados | Alta         |
+| `@ethos/erp-bridge` | Bling/Tiny/Omie unificados     | Alta         |
+
+### Adicionais (15 pacotes — pós-v1, demand-driven)
+
+| Pacote                   | Foco                                  | Trigger                                         |
+| ------------------------ | ------------------------------------- | ----------------------------------------------- |
+| `@ethos/whisper`         | Transcrição via Whisper               | 3 projetos com áudio                            |
+| `@ethos/maps`            | Google Maps + Mapbox + CEP            | 3 projetos com geo                              |
+| `@ethos/sms`             | Twilio + Zenvia                       | 3 projetos com SMS                              |
+| `@ethos/signature`       | D4Sign + ClickSign + DocuSign         | 3 projetos com contrato online                  |
+| `@ethos/nfse`            | NFS-e municipal via Focus/NFe.io      | 3 projetos prestadores de serviço               |
+| `@ethos/marketplaces`    | ML + Shopee + Amazon                  | 3 projetos varejo online                        |
+| `@ethos/social`          | Instagram + TikTok + Facebook         | 3 projetos com presença social                  |
+| `@ethos/email-marketing` | Mailchimp + Brevo + RD                | 3 projetos com campanhas                        |
+| `@ethos/scheduling`      | Calendly-like + Google sync           | 3 projetos agendamento (estética/clínica/aulas) |
+| `@ethos/iot-telemetry`   | MQTT + sensores                       | 3 projetos IoT                                  |
+| `@ethos/crm-bridge`      | RD CRM + HubSpot + Pipedrive          | 3 projetos com CRM externo                      |
+| `@ethos/contabilidade`   | Conta Azul + Asaas                    | 3 projetos com sync contábil                    |
+| `@ethos/pix-direto`      | Pix via PSP bancário                  | 3 projetos volume alto Pix                      |
+| `@ethos/loyalty`         | Cashback + pontos + cupons            | 3 projetos varejo/restaurante                   |
+| `@ethos/reviews`         | Reviews internos + Google My Business | 3 projetos serviço presencial                   |
 
 ---
 
