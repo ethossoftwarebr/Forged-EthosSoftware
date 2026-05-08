@@ -4,8 +4,8 @@
 
 > Resume artifact pra novas sessões do Claude Code. Lido automaticamente pelo agent durante pipelines; serve de baseline pra qualquer dev/sessão que pegar o projeto.
 >
-> **Atualizado:** 2026-05-08 (sessão 3 — pós #6.5)
-> **Estado:** prompts #1 (setup), #2 (tooling), #3 (`@ethos/ui` fundação), #4 (32 primitivos), #5 (10 compostos), **#6 (3 layouts)** e **#6.5 (Roadmap Expansion — docs)** concluídos. UI lib completa. Roadmap expandido: 39 packages totais (16 infra + 23 plugáveis), Fases 9-12 pós-v1 documentadas, doc 13 novo (manutenção/evolução), Fase 2.5 nova (Templates Premium). Próximo: prompt #7 (`templates/starter/apps/api/` — NestJS 10 + Prisma 5 + Postgres).
+> **Atualizado:** 2026-05-08 (sessão 4 — pós #7)
+> **Estado:** prompts #1–#7 concluídos. UI lib completa + **API base do starter pronta** (NestJS 10 + Prisma 5 stub + Pino + Helmet + Compression + Swagger + Zod env + envelope `{data,meta}` + `/health` Terminus + Dockerfile multi-stage). Próximo: prompt #8 (Auth + Multi-tenant) — spec já criada em `.claude/spec/active/2026-05-08-ethos-auth-multitenant/` com 11 decisões D1-D11 propostas (pending dev approval ao rodar `/mustard:resume` na sessão 5).
 
 ## 1. O que é o projeto
 
@@ -50,6 +50,13 @@ Documentação completa em `docs/` (14 .md) e `CLAUDE.md` na raiz. `docs/12-PROM
 ## 4. Progresso (commits no main, pushados em origin)
 
 ```
+23e575a  feat(api): health endpoint + prisma stub + Dockerfile multi-stage (wave 3 do prompt #7) — API base FINAL
+ae0714e  feat(api): common filters + interceptors + pipes + env schema (wave 2 do prompt #7)
+7065ea1  chore(api): bootstrap NestJS 10 em templates/starter/apps/api/ (wave 1 do prompt #7)
+8acf535  docs(forge): atualiza roadmap com Fase 2.5 + Fases 9-12 + notes pos-#6.5
+897e36f  docs(forge): adiciona 15 plugaveis pos-v1 ao doc 08 (23 plugaveis totais)
+23a41eb  docs(forge): expande doc 03 com 9 infras adicionais (16 infras totais)
+ba604ac  docs(forge): adiciona doc 13 — manutencao e evolucao pos-v1
 7e37e6a  feat(ui): layout DashboardLayout no @ethos/ui (wave 2 do prompt #6) — UI lib FINAL
 4f33807  feat(ui): layouts AuthLayout e SettingsLayout no @ethos/ui (wave 1 do prompt #6)
 c7d0a59  docs(handoff): atualiza notes apos prompt #5 (10 compostos @ethos/ui)
@@ -140,46 +147,61 @@ ca8a429  docs: documentação inicial do Forge
   - Build final: `dist/index.mjs` 117 KB (era 65 KB pós-#4) + `dist/index.d.mts` 46 KB
   - **8/8 ACs PASS** — qa.result event registrado no harness (overall=pass)
   - Concerns abertos pra resolver em prompt futuro: (a) PageHeader exporta `BreadcrumbItem` como alias `PageHeaderBreadcrumbItem` por colisão com primitivo Breadcrumb; (b) `FilterOption` colide entre DataTablePro/types.ts (canônico) e FiltersPanel/types.ts — re-exportado como `FiltersPanelOption`; (c) FormBuilder usa `zodResolver(schema as never) as Resolver<T>` pra unificar Zod v3/v4 input shapes (z.coerce input=unknown vs Resolver expects FieldValues)
+- ✅ **API base do starter concluída (prompt #7)** — 3 waves em 3 commits (`7065ea1`, `ae0714e`, `23e575a`)
+  - **NestJS 10.4.22** (LTS) + **Prisma 5.22.0** + **Zod 4.0.4** (D3 — `z.url()` canônico em Zod 4) + **nestjs-pino 4.4** + **helmet 8** + **compression 1.8** + **@nestjs/throttler 6** (60req/min — D16) + **@nestjs/swagger 11** + **@nestjs/terminus 11**
+  - **22 arquivos** em `templates/starter/apps/api/`: bootstrap completo (`main.ts` com Helmet + Compression + ValidationPipe + Swagger `/api-docs` + CORS + graceful shutdown + Pino bufferLogs), `EnvModule` (Zod env validation, trava startup com env inválido), `AllExceptionsFilter` (envelope `{ error: { code, message, statusCode, timestamp, path, details? } }`), `TransformInterceptor` (envelope `{ data, meta: { timestamp, path } }` com skip rules pra /api-docs/SSE/Buffer/already-wrapped), `ZodValidationPipe` (per-route via `@ZodBody(schema)` — NÃO global porque pipe precisa de schema arg), `HealthController` (Terminus memory+disk), `Dockerfile` multi-stage `node:20-alpine` + `corepack` pnpm, `prisma/schema.prisma` placeholder
+  - Adicionado `templates/starter/apps/*` no `pnpm-workspace.yaml` (workspace não cobria starter apps)
+  - **Decisões locked D1-D17:** D1 NestJS 10 LTS, D2 Prisma 5 placeholder local, D3 Zod (não class-validator), D4 nestjs-pino bufferLogs, D5 Swagger /api-docs + /api-docs-json, D6 envelope `{data,meta}`, D7 envelope error com code, D8 Dockerfile multi-stage Alpine, D9 Prisma 0 models (workaround Prisma 5.22: 1 placeholder model `PlaceholderHealth` "DO NOT USE" — fechado em #8 quando schema migra pra `@ethos/database`), D10 sem E2E neste prompt, D11 3 commits + auto-push, D12-D13 smoke manual aceitável, D14 concerns #3-#6 deferidos, D15 extends `@ethos/config/tsconfig/nestjs.json`, D16 throttler 60req/min, D17 `/health` sem auth (até #8 wirar `@Public()`)
+  - Validações: `pnpm install` PASS · `pnpm lint` 17/17 PASS · `pnpm typecheck` 17/17 PASS · `pnpm build` 3/3 PASS · `prisma generate` PASS
+  - Review APPROVED (0 critical, 3 warnings, 5 notes — todos deferidos a #8)
+  - **4/7 ACs PASS** automatizados (1, 2, 3, 4); **3 ACs deferidos** a smoke manual (5 Zod env trap, 6 `/health` 200, 7 `/api-docs-json` JSON válido — comandos documentados)
+  - **5 concerns abertos pra resolver no #8:** (a) D9 fechamento — deletar schema local, apontar pra `@ethos/database`; (b) `AllExceptionsFilter` preservar `code: VALIDATION_ERROR` do `ZodValidationPipe` (hoje vira `BAD_REQUEST` no path HttpException); (c) `main.ts` usar `EnvService` (não `process.env` direto); (d) `HealthController.check()` anotar return type; (e) `TransformInterceptor` skip `^/health` (monitores externos esperam shape Terminus puro)
 - ✅ Branch `main` em sync com `origin/main` (auto-push ativo após cada commit — D18)
 
-## 6. Próximo passo: prompt #6 (`@ethos/ui` — Layouts)
+## 6. Próximo passo: prompt #8 (Auth + Multi-tenant)
 
-Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §6. Vai construir layouts consumindo primitivos do #4 + compostos do #5:
+Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §8 + `docs/07-AUTH-MULTI-TENANT.md`. **Coração do kit** — todo produto cliente herda essa fundação.
 
-- **DashboardLayout** — sidebar (collapsible) + topbar (UserAvatar do #5 + notificações) + main area; consome PageHeader/SectionHeader
-- **AuthLayout** — split com hero esquerda + form direita; envolve FormBuilder do #5
-- **SettingsLayout** — sidebar de seções + main area com SectionHeader
-- Outros conforme prompt #6
+**Spec já preparada:** `.claude/spec/active/2026-05-08-ethos-auth-multitenant/spec.md` (status `pending-approval` — aguarda dev rodar `/mustard:resume` na sessão 5 e aprovar/ajustar inline as 11 decisões D1-D11).
 
-**Estado de partida prompt #6:**
+**4 waves planejadas:**
 
-- 32 primitivos + 10 compostos navegáveis no Storybook em :6006 (104 + 52 = ~156 stories)
-- Build/typecheck/lint/build-storybook verde monorepo-wide (`@ethos/ui` 117KB ESM + 46KB d.mts)
-- Padrão consolidado: primitivos flat (`src/components/<Primitivo>.tsx`), compostos em pastas (`src/components/<Composto>/index.tsx`) com sub-arquivos opcionais
-- Reuse-first established: compostos REUSAM primitivos sem redeclarar styling/variants — Layouts devem fazer o mesmo (consumir PageHeader/SectionHeader/UserAvatar/etc.)
+1. **DB + packages** — schema central em `packages/database/prisma/schema.prisma` (Tenant, User, TenantMember, RefreshToken, Session, AuditLog + enum Role) + migration inicial; `@ethos/auth` (argon2id + JWT helpers); `@ethos/database` (Prisma client wrapper + extension multi-tenant); `@ethos/api-base` (guards JwtAuth/Roles/Tenant + decorators + AsyncLocalStorage + AuditLog interceptor)
+2. **AuthModule** — `register`, `login`, `refresh` (rotation), `logout`, `me` em `templates/starter/apps/api/src/modules/auth/`
+3. **UsersModule + TenantsModule** — CRUD básico, role-aware, com isolation automática por tenant
+4. **Wire-up + cleanup #7 + audit + seed** — `JwtAuthGuard` global, `@Public()` em `health.controller`, habilitar `PrismaHealthIndicator`, resolver os 5 concerns abertos do #7, `AuditLogInterceptor` global, seed default (1 tenant + 1 owner)
 
-**Concerns abertos do #5 (próximo deve resolver ou re-deferir):**
+**11 decisions propostas (pending dev approval):**
 
-- (a) `BreadcrumbItem` colide entre primitivo Breadcrumb e composto PageHeader — alias `PageHeaderBreadcrumbItem` no barrel
-- (b) `FilterOption` colide entre DataTablePro/types.ts (canônico) e FiltersPanel/types.ts — alias `FiltersPanelOption`
-- (c) FormBuilder usa `zodResolver(schema as never) as Resolver<T>` — solução pragmática pra unificar Zod v3/v4 input shapes
-- (d) `SearchBar`, `StatGrid`, `Timeline`, `CommandPalette`, `ChartCard` (D11) NÃO foram implementados — divergence vs doc 04, deferido pra prompt #5.5 ou pós-Layouts
-- (e) FormBuilder superset do doc 04 (`currency`, `cpf`, `cnpj`, `cep`, etc. — D4) é follow-up Brasil-specific
-- (f) Validação humana de a11y dos compostos pendente em http://localhost:6006
+- D1: `@node-rs/argon2` (Rust binding, prebuilt) vs `argon2` Node native — recomendação Rust (sem build tools)
+- D2: `jose` (moderno, ESM, edge-compat) vs `jsonwebtoken` (clássico) — recomendação `jose`
+- D3: Cookies via lib `cookie` direta (sem middleware) — wrapper helper em `@ethos/auth`
+- D4: AsyncLocalStorage em `@ethos/api-base` (não `@ethos/auth` — auth deve ser framework-agnostic)
+- D5: Refresh rotation **mandatory** (refresh1 invalida ao gerar refresh2). Access 15min, refresh 30 dias
+- D6: Cross-tenant retorna **404** (não 403 — não vazar existência)
+- D7: AuditLog **síncrono** neste prompt (mesma transaction); refactor pra async via BullMQ vira follow-up no #15
+- D8: Seed cria tenant `default` + user `admin@ethos.local` com senha de `SEED_ADMIN_PASSWORD` env (sem default público)
+- D9 (fecha #7): schema local deletado, `package.json` aponta `prisma.schema` pra `packages/database/prisma/schema.prisma`
+- D10: Public routes — `/health`, `/auth/register`, `/auth/login`, `/auth/refresh`, `/api-docs*`. Resto privado por default
+- D11: 8+ commits Conventional + auto-push após cada
 
-**Concerns abertos (próximo deve resolver ou re-deferir):**
+**10 ACs definidos** (schema validate, migrations aplicadas, hash/JWT exports, register flow E2E, cross-tenant 404 isolation, refresh rotation, argon2 memoryCost configurável, senhas nunca em log, tenantId nunca do body, `/health` 200 com/sem cookie).
 
-- **Divergence doc 04 vs prompt #4:** componentes do doc 04 NÃO implementados no #4 — `HoverCard`, `Drawer` standalone, `Calendar` standalone, `Menubar`, `NavigationMenu`, `AlertDialog`. Decisão D11 deferiu pra resolver em doc-update follow-up. Recomendação: atualizar `docs/04-BIBLIOTECA-UI.md` durante prep do #5 para refletir realidade.
-- **Concerns do prompt #3 ainda abertos** (deferidos no #4 via D17): `tsconfig.base.json` órfão, `incremental: false` override, `<Button asChild loading>` Slot break, `.d.mts` em vez de `.d.ts`. Resolver quando `apps/playground` ou `templates/starter/apps/web` consumir `@ethos/ui` — aí ficará claro se algum bloqueia consumer real.
-- **AC#10 a11y manual** do prompt #4 — validação humana em http://localhost:6006 ainda pendente. Tab navigation, Esc fecha overlays, Enter/Space ativam triggers, setas em Select/DropdownMenu. Reportar issues como follow-ups isolados.
+**Estimativa:** 4-6 horas (waves complexas + E2E testing).
+
+**Concerns abertos / deferidos:**
+
+- **Concerns do #7 (5 itens — listados acima)** — resolução obrigatória durante #8
+- **Concerns acumulados #3-#6 (UI lib)** — re-deferidos pra quando `templates/starter/apps/web/` consumir `@ethos/ui` (será no #10)
+- **AC#10 a11y manual** do prompt #4 — validação humana em http://localhost:6006 ainda pendente
 
 **Princípios reaproveitados (não-negociáveis):**
 
-- Não copiar shadcn cru — inspiração estrutural (Radix + slot + cn), estética/tokens proprietários
-- Sem CSS-in-JS (só Tailwind), sem libs UI prontas
-- Mobile-first com viewports do Storybook
-- TypeScript strict; `forwardRef` + `displayName` em todos os componentes
-- Compostos REUSAM primitivos — nunca redeclaram styling/variants (importam de `./<Primitivo>`)
+- argon2id (NÃO bcrypt), JWT em cookie httpOnly (NÃO localStorage)
+- `tenantId` SÓ do JWT decodificado — nunca do body/query
+- Princípio do menor privilégio — todo endpoint anota `@Roles(...)` ou herda guard
+- Postgres pra sessões persistidas (NÃO memória)
+- Sem CSS-in-JS, sem libs UI prontas (continua valendo no frontend quando chegar)
 
 ## 7. Pipeline planejado (#3 a #23)
 
@@ -192,8 +214,8 @@ Escopo conforme `docs/12-PROMPTS-CLAUDE-CODE.md` §6. Vai construir layouts cons
 | 5     | @ethos/ui — Compostos (10: DataTablePro, FormBuilder, KpiCard, etc.)                  | ✅ Concluído   |
 | 6     | @ethos/ui — Layouts (Dashboard, Auth, Settings)                                       | ✅ Concluído   |
 | 6.5   | Roadmap Expansion (docs 03/08/11/13 + CLAUDE.md — 39 packages, Fases 9-12)            | ✅ Concluído   |
-| 7     | Setup do app API (NestJS em `templates/starter/apps/api/`)                            | ⏭️ **Próximo** |
-| 8     | Auth + Multi-tenant                                                                   | Pendente       |
+| 7     | Setup do app API (NestJS em `templates/starter/apps/api/`)                            | ✅ Concluído   |
+| 8     | Auth + Multi-tenant                                                                   | ⏭️ **Próximo** |
 | 9     | Geradores Backend (em `tools/generators/forge-controller/`)                           | Pendente       |
 | 10    | Setup do app Web (Next.js em `templates/starter/apps/web/`)                           | Pendente       |
 | 11    | Geradores Frontend (em `tools/generators/forge-page/`)                                | Pendente       |
