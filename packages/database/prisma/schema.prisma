@@ -1,0 +1,240 @@
+// Ethos Forge — schema central (single source of truth).
+//
+// Decisões travadas em .claude/spec/active/2026-05-08-ethos-auth-multitenant/spec.md:
+//   D9   schema central, apps consomem via prisma.schema em package.json
+//   D12  OAuth-ready (User.password nullable, OAuthAccount table)
+//   D14  Auth Roadmap Modular (MFA + magic link + lockout schema-ready)
+//   D15  White-label (Tenant.settings + brandColor + logoUrl + appName + locale)
+//
+// Estratégia multi-tenant: User pode pertencer a N tenants via TenantMember (M:N).
+// `tenantId` em RefreshToken/Session/AuditLog identifica o contexto da sessão,
+// não vínculo do User.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Tenant — conta multi-tenant + white-label config (D15)
+// ============================================================================
+
+model Tenant {
+  id         String  @id @default(cuid())
+  slug       String  @unique // usado em subdomain routing (acme.app.com)
+  name       String
+  // White-label (D15) — schema-ready pra spec #18
+  settings   Json?
+  brandColor String?
+  logoUrl    String?
+  appName    String?
+  locale     String  @default("pt-BR")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members       TenantMember[]
+  refreshTokens RefreshToken[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  magicLinks    MagicLinkToken[]
+}
+
+// ============================================================================
+// User — identidade global; vínculo com tenant via TenantMember (M:N)
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String? // nullable — usuário OAuth-only nunca teve senha (D12)
+  name          String?
+  image         String? // avatar do OAuth provider (D12)
+  emailVerified DateTime? // Google OAuth já entrega verificado (D12)
+
+  // MFA (D14.4) — schema-ready pra #8.7
+  totpSecret String?
+  mfaEnabled Boolean @default(false)
+
+  // Lockout / rate limiting (D14.6 — IMPLEMENTADO em #8)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members        TenantMember[]
+  oauthAccounts  OAuthAccount[]
+  refreshTokens  RefreshToken[]
+  sessions       Session[]
+  auditLogs      AuditLog[]
+  mfaBackupCodes MfaBackupCode[]
+}
+
+// ============================================================================
+// Roles — princípio do menor privilégio (CLAUDE.md)
+// ============================================================================
+
+enum Role {
+  owner
+  admin
+  manager
+  member
+  viewer
+}
+
+model TenantMember {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      Role     @default(member)
+  invitedBy String? // userId do quem convidou (audit trail)
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+}
+
+// ============================================================================
+// OAuth Account (D12) — schema-ready pra spec #8.5
+// Provider e providerAccountId vêm do Google/Microsoft.
+// ============================================================================
+
+model OAuthAccount {
+  id                String    @id @default(cuid())
+  userId            String
+  provider          String // "google" | "microsoft" — string pra extensibilidade
+  providerAccountId String
+  accessToken       String?   @db.Text
+  refreshToken      String?   @db.Text
+  expiresAt         DateTime?
+  idToken           String?   @db.Text
+  scope             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ============================================================================
+// RefreshToken (D5 + D13.5) — rotation mandatory + hash em DB
+// `tokenHash` é argon2id(token); o token plaintext só vive no cookie do client.
+// `family` agrupa tokens irmãos pra detectar reuse (D5 — token reuse = revoga family inteira).
+// ============================================================================
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique // argon2id(token plaintext) — D13.5
+  userId    String
+  tenantId  String // sessão é por-tenant (multi-tenant context)
+  family    String // grupo de tokens irmãos pra detecção de reuse
+  expiresAt DateTime
+  revokedAt DateTime?
+  rotatedAt DateTime?
+  userAgent String?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tenantId])
+  @@index([family])
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// Session — telemetria de sessões ativas (analytics + ops)
+// Diferente de RefreshToken: Session é metadata; RefreshToken é credencial.
+// ============================================================================
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  tenantId   String
+  userAgent  String?
+  ip         String?
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([userId, tenantId])
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// AuditLog (D7 — síncrono no #8; refactor pra BullMQ em #15)
+// ============================================================================
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  tenantId     String
+  userId       String? // null pra ações pré-auth ou sistema
+  action       String // "user.create" | "auth.login" | "tenant.update" etc.
+  resourceType String? // "User" | "Tenant" | "TenantMember"
+  resourceId   String?
+  meta         Json? // payload adicional (mascarado de PII pelo interceptor)
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([userId])
+  @@index([action])
+}
+
+// ============================================================================
+// MFA Backup Codes (D14.4) — schema-ready pra #8.7
+// codeHash é argon2id; usedAt single-use.
+// ============================================================================
+
+model MfaBackupCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================================================
+// MagicLinkToken (D14.4) — schema-ready pra #8.6
+// `email` não é FK — magic link pode disparar registro se User não existir.
+// `tenantId` inferido do subdomain de origem (#8.6 trava decisão).
+// ============================================================================
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  email     String
+  tenantId  String
+  tokenHash String    @unique // argon2id
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([email, tenantId])
+  @@index([expiresAt])
+}
