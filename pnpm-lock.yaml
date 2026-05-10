@@ -94,10 +94,29 @@ importers:
         version: 5.9.3
 
   packages/api-base:
+    dependencies:
+      '@ethos/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@ethos/database':
+        specifier: workspace:*
+        version: link:../database
     devDependencies:
       '@ethos/config':
         specifier: workspace:*
         version: link:../config
+      '@nestjs/common':
+        specifier: ^10.4.22
+        version: 10.4.22(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^10.4.22
+        version: 10.4.22(@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@10.4.22)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.40
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
       typescript:
         specifier: ^5.4.0
         version: 5.9.3
