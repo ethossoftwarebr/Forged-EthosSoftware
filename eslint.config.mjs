@@ -9,10 +9,13 @@ import base from '@ethos/config/eslint/base.mjs';
 const config = [
   ...base,
   {
-    files: ['**/*.config.{js,cjs}'],
+    files: ['**/*.config.{js,cjs}', '**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
       globals: { ...globals.node },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {
