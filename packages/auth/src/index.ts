@@ -32,8 +32,9 @@ export {
   type JwtKeyset,
 } from './jwks';
 
-// Adapter pattern (D14.1) — AuthAdapter interface (NativeAuthAdapter impl no proximo commit)
+// Adapter pattern (D14.1) — AuthAdapter interface + NativeAuthAdapter (default impl)
 export type { AuthAdapter } from './adapter';
+export { NativeAuthAdapter } from './native-adapter';
 
 // Interfaces sem impl (D14.5 + D12) — concretas em #8.5 / #8.6 / #8.7
 export type { OAuthProvider, OAuthTokens, OAuthProfile } from './oauth';
