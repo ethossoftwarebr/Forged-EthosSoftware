@@ -31,3 +31,11 @@ export {
   type JwtKeyMaterial,
   type JwtKeyset,
 } from './jwks';
+
+// Adapter pattern (D14.1) — AuthAdapter interface (NativeAuthAdapter impl no proximo commit)
+export type { AuthAdapter } from './adapter';
+
+// Interfaces sem impl (D14.5 + D12) — concretas em #8.5 / #8.6 / #8.7
+export type { OAuthProvider, OAuthTokens, OAuthProfile } from './oauth';
+export type { MfaProvider } from './mfa';
+export type { PasswordlessProvider } from './passwordless';
