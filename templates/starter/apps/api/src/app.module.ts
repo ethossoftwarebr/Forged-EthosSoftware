@@ -1,4 +1,9 @@
-import { AuditLogInterceptor, JwtAuthGuard, MultiTenantInterceptor } from '@ethos/api-base';
+import {
+  AuditLogInterceptor,
+  JwtAuthGuard,
+  MultiTenantInterceptor,
+  RolesGuard,
+} from '@ethos/api-base';
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -11,6 +16,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { EnvModule } from './config/env.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -43,14 +49,18 @@ const isProduction = process.env.NODE_ENV === 'production';
     // AuthModule é @Global e provê PRISMA_CLIENT_TOKEN + AUTH_ADAPTER_TOKEN
     // pros guards/interceptors globais abaixo.
     AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
 
-    // Guards globais: throttler primeiro (proteção DDoS), depois auth.
+    // Guards globais: throttler primeiro (proteção DDoS), depois auth, depois roles.
+    // Nest executa APP_GUARDs em ordem de registro — RolesGuard precisa rodar
+    // DEPOIS de JwtAuthGuard (que popula request.user).
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
 
     // Filters globais.
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
