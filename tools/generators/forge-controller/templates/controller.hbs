@@ -1,0 +1,140 @@
+import { CurrentUser, Roles, Audit } from '@ethos/api-base';
+import type { AuthSession } from '@ethos/auth';
+import {
+  BadRequestException,
+  Controller,
+  DefaultValuePipe,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+
+import { ZodBody } from '../../common/pipes/zod-validation.pipe';
+
+import {
+  Create{{className}}Schema,
+  type Create{{className}}Dto,
+  Update{{className}}Schema,
+  type Update{{className}}Dto,
+} from './dto/{{resourceKebab}}.dto';
+import { type {{className}}Item, type List{{className}}Result, {{className}}sService } from './{{resourcePath}}.service';
+
+/**
+ * {{className}}sController — gerado pelo Forge (prompt #9).
+ *
+ * Modelo B (D3): controller.ts é regenerado a cada `forge:gen:backend`.
+ * Para customizar lógica de negócio, edite `{{resourcePath}}.service.ts` (preservado).
+ *
+ * Multi-tenant: `tenantId` vem de `@CurrentUser session.tenantId` (JWT).
+ * NUNCA do body/query (D7 + CLAUDE.md).
+ *
+ * Roles por verbo (D5):
+ *  - GET (list/findOne): owner, admin, manager, member, viewer (todos autenticados)
+ *  - POST/PATCH: owner, admin, manager
+ *  - DELETE: owner, admin
+ *
+ * Audit em mutations (D6): @Audit em POST/PATCH/DELETE; GETs sem audit.
+ */
+@ApiTags('{{resourcePath}}')
+@Controller('{{resourcePath}}')
+export class {{className}}sController {
+  private readonly MAX_TAKE = 100;
+  private readonly MAX_SKIP = 100_000;
+
+  constructor(private readonly {{varName}}sService: {{className}}sService) {}
+
+  // ==========================================================================
+  // GET /{{resourcePath}} — listing (todos autenticados — D5)
+  // ==========================================================================
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @Roles('owner', 'admin', 'manager', 'member', 'viewer')
+  async list(
+    @CurrentUser() session: AuthSession,
+    @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query('search') search?: string,
+  ): Promise<List{{className}}Result> {
+    if (take < 1 || take > this.MAX_TAKE) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: `take deve estar entre 1 e ${this.MAX_TAKE}.`,
+      });
+    }
+    if (skip < 0 || skip > this.MAX_SKIP) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: `skip deve estar entre 0 e ${this.MAX_SKIP}.`,
+      });
+    }
+    return this.{{varName}}sService.list(session.tenantId, { take, skip, ...(search ? { search } : {}) });
+  }
+
+  // ==========================================================================
+  // GET /{{resourcePath}}/:id — todos autenticados (D5); cross-tenant 404
+  // ==========================================================================
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('owner', 'admin', 'manager', 'member', 'viewer')
+  async findOne(
+    @CurrentUser() session: AuthSession,
+    @Param('id') id: string,
+  ): Promise<{{className}}Item> {
+    return this.{{varName}}sService.findOne(session.tenantId, id);
+  }
+
+  // ==========================================================================
+  // POST /{{resourcePath}} — manager+ (D5); audit (D6)
+  // ==========================================================================
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @Roles('owner', 'admin', 'manager')
+  @Audit('{{resourceKebab}}.create')
+  async create(
+    @CurrentUser() session: AuthSession,
+    @ZodBody(Create{{className}}Schema) dto: Create{{className}}Dto,
+  ): Promise<{{className}}Item> {
+    return this.{{varName}}sService.create(session.tenantId, dto);
+  }
+
+  // ==========================================================================
+  // PATCH /{{resourcePath}}/:id — manager+ (D5); audit (D6)
+  // ==========================================================================
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @Roles('owner', 'admin', 'manager')
+  @Audit('{{resourceKebab}}.update')
+  async update(
+    @CurrentUser() session: AuthSession,
+    @Param('id') id: string,
+    @ZodBody(Update{{className}}Schema) dto: Update{{className}}Dto,
+  ): Promise<{{className}}Item> {
+    return this.{{varName}}sService.update(session.tenantId, id, dto);
+  }
+
+  // ==========================================================================
+  // DELETE /{{resourcePath}}/:id — admin+ (D5); audit (D6)
+  // ==========================================================================
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles('owner', 'admin')
+  @Audit('{{resourceKebab}}.delete')
+  async remove(
+    @CurrentUser() session: AuthSession,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.{{varName}}sService.remove(session.tenantId, id);
+  }
+}

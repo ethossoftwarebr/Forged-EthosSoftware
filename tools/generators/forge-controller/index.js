@@ -74,6 +74,7 @@ ${pc.bold('Marker:')}
       { template: 'controller.hbs', output: `${ctx.resourcePath}.controller.ts`, force: true },
       { template: 'module.hbs', output: `${ctx.resourcePath}.module.ts`, force: true },
       { template: 'repository.hbs', output: `${ctx.resourcePath}.repository.ts`, force: true },
+      { template: 'dto/dto.hbs', output: `dto/${ctx.resourceKebab}.dto.ts`, force: true },
       { template: 'service.hbs', output: `${ctx.resourcePath}.service.ts`, force: false }, // D3: Modelo B
     ];
 

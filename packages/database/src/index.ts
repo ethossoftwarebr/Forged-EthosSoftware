@@ -10,6 +10,7 @@ export type {
   AuditLog,
   MfaBackupCode,
   MagicLinkToken,
+  Product,
   Role,
   Prisma,
 } from '@prisma/client';

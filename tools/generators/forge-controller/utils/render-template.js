@@ -2,14 +2,16 @@ import Handlebars from 'handlebars';
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { constants } from 'node:fs';
-import { toKebabCase, toPascalCase, toCamelCase, pluralize, resourcePath } from './case-helpers.js';
+import { toKebabCase, toPascalCase, toCamelCase, pluralize } from './case-helpers.js';
 
-// Helpers Handlebars
+// Helpers Handlebars — disponíveis pra transformações ad-hoc no template.
+// Nota: `resourcePath` NÃO é registrado como helper porque o contexto já expõe
+// `{{resourcePath}}` como variável (colisão de nome). Use `{{kebab name}}` +
+// `{{plural ...}}` se precisar derivar paths manualmente.
 Handlebars.registerHelper('kebab', (s) => toKebabCase(s));
 Handlebars.registerHelper('pascal', (s) => toPascalCase(s));
 Handlebars.registerHelper('camel', (s) => toCamelCase(s));
 Handlebars.registerHelper('plural', (s) => pluralize(s));
-Handlebars.registerHelper('resourcePath', (s) => resourcePath(s));
 
 /**
  * Renderiza template Handlebars e escreve em outputPath.

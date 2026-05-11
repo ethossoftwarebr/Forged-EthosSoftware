@@ -1,0 +1,24 @@
+import { z } from 'zod';
+
+/**
+ * {{className}} DTOs — gerados pelo Forge (prompt #9).
+ *
+ * Schemas Zod strict (.strict()) — chaves extras rejeitadas com 400 (D7).
+ * `tenantId` NUNCA aceito no body (vem do JWT via @CurrentUser).
+ *
+ * TODO(forge): em V2 esses fields serão gerados a partir do schema.prisma —
+ * por enquanto, ajuste manualmente conforme campos do model.
+ */
+
+export const Create{{className}}Schema = z
+  .object({
+    name: z.string().min(1, 'name é obrigatório'),
+    sku: z.string().min(1, 'sku é obrigatório'),
+    price: z.coerce.number().nonnegative('price deve ser >= 0'),
+    description: z.string().optional(),
+  })
+  .strict();
+export type Create{{className}}Dto = z.infer<typeof Create{{className}}Schema>;
+
+export const Update{{className}}Schema = Create{{className}}Schema.partial().strict();
+export type Update{{className}}Dto = z.infer<typeof Update{{className}}Schema>;

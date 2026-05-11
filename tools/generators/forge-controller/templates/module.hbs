@@ -1,0 +1,17 @@
+import { Module } from '@nestjs/common';
+
+import { {{className}}sController } from './{{resourcePath}}.controller';
+import { {{className}}sRepository } from './{{resourcePath}}.repository';
+import { {{className}}sService } from './{{resourcePath}}.service';
+
+/**
+ * {{className}}sModule — gerado pelo Forge (prompt #9).
+ *
+ * `PRISMA_CLIENT_TOKEN` é provido globalmente pelo `AuthModule` (@Global) —
+ * não precisa declarar aqui.
+ */
+@Module({
+  controllers: [{{className}}sController],
+  providers: [{{className}}sService, {{className}}sRepository],
+})
+export class {{className}}sModule {}
