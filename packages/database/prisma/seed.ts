@@ -1,4 +1,4 @@
-import { hashPassword } from '@ethos/auth';
+import { hash } from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
 
 /**
@@ -10,10 +10,20 @@ import { PrismaClient } from '@prisma/client';
  * Segurança: senha NUNCA vem de default público — exige `SEED_ADMIN_PASSWORD`
  * env (≥ 12 chars). Em CI/Railway, popule via secret manager antes do `db:seed`.
  *
- * Princípio CLAUDE.md: argon2id (D1) — usa `hashPassword` do `@ethos/auth`.
+ * Argon2id config: idêntica à do `@ethos/auth/hash.ts` (D1). Inlinada aqui em
+ * vez de `import { hashPassword } from '@ethos/auth'` pra evitar cycle no
+ * grafo do Turbo (`@ethos/auth` depende de `@ethos/database` via NativeAdapter).
+ * Trade-off aceito: 4 linhas duplicadas vs cycle.
  */
 
 const prisma = new PrismaClient();
+
+const argonConfig = {
+  algorithm: 2 as const, // Argon2id
+  memoryCost: parseInt(process.env.ARGON_MEMORY_COST ?? '65536', 10),
+  timeCost: parseInt(process.env.ARGON_TIME_COST ?? '3', 10),
+  parallelism: parseInt(process.env.ARGON_PARALLELISM ?? '4', 10),
+};
 
 async function main(): Promise<void> {
   const adminEmail = 'admin@ethos.local';
@@ -35,7 +45,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const passwordHash = await hashPassword(adminPassword);
+  const passwordHash = await hash(adminPassword, argonConfig);
 
   const tenant = await prisma.tenant.create({
     data: {
