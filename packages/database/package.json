@@ -25,7 +25,9 @@
   "devDependencies": {
     "@ethos/config": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
+    "@prisma-utils/prisma-crud-generator": "^1.3.5",
     "prisma": "^5.22.0",
+    "prisma-generator-nestjs-dto": "^1.1.4",
     "tsx": "^4.19.0",
     "typescript": "^5.4.0"
   },

@@ -6,3 +6,4 @@ node_modules/
 prisma/migrations/dev_*
 coverage/
 .turbo/
+src/generated/

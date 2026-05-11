@@ -14,6 +14,32 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator nestjsDto {
+  provider                        = "prisma-generator-nestjs-dto"
+  output                          = "../../../templates/starter/apps/api/src/generated/dto"
+  outputToNestJsResourceStructure = "false"
+  flatResourceStructure           = "false"
+  exportRelationModifierClasses   = "true"
+  reExport                        = "false"
+  createDtoPrefix                 = "Create"
+  updateDtoPrefix                 = "Update"
+  dtoSuffix                       = "Dto"
+  entityPrefix                    = ""
+  entitySuffix                    = ""
+  classValidation                 = "false"
+  fileNamingStyle                 = "kebab"
+  noDependencies                  = "false"
+  outputType                      = "class"
+  definiteAssignmentAssertion     = "false"
+  requiredResponseApiProperty     = "true"
+  prettier                        = "true"
+}
+
+generator nestjsCrud {
+  provider = "prisma-crud-generator"
+  output   = "../../../templates/starter/apps/api/src/generated/crud"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -237,4 +263,23 @@ model MagicLinkToken {
 
   @@index([email, tenantId])
   @@index([expiresAt])
+}
+
+// ============================================================================
+// Product (exemplo do prompt #9 — valida generators end-to-end via /// @forge.generate)
+// ============================================================================
+
+/// @forge.generate(controller, page)
+model Product {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  sku         String
+  price       Decimal  @db.Decimal(12, 2)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
 }
