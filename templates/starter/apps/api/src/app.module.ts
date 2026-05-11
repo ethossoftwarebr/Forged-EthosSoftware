@@ -16,6 +16,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { EnvModule } from './config/env.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProductsModule } from './modules/products/products.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -50,8 +51,9 @@ const isProduction = process.env.NODE_ENV === 'production';
     // AuthModule é @Global e provê PRISMA_CLIENT_TOKEN + AUTH_ADAPTER_TOKEN
     // pros guards/interceptors globais abaixo.
     AuthModule,
-    UsersModule,
+    ProductsModule,
     TenantsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [

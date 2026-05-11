@@ -30,7 +30,7 @@ generator nestjsDto {
   fileNamingStyle                 = "kebab"
   noDependencies                  = "false"
   outputType                      = "class"
-  definiteAssignmentAssertion     = "false"
+  definiteAssignmentAssertion     = "true"
   requiredResponseApiProperty     = "true"
   prettier                        = "true"
 }
