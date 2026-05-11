@@ -29,6 +29,9 @@ const config = [
       'pnpm-lock.yaml',
       '**/.pnpm-store/**',
       '**/coverage/**',
+      // D8: tools/generators/* tem package.json + node_modules proprios, fora do pnpm workspace.
+      // Cliente Forge nao recebe esses arquivos. ESLint monorepo-wide nao deve cobri-los.
+      'tools/generators/**',
     ],
   },
 ];

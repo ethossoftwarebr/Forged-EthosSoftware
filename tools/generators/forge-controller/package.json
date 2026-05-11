@@ -1,0 +1,24 @@
+{
+  "name": "@ethos-tools/forge-controller",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Forge CLI — schema Prisma marcado com /// @forge.generate(controller) → controller/module/service/repository NestJS via Handlebars. IP da Ethos.",
+  "main": "index.js",
+  "bin": {
+    "forge-controller": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dry": "node index.js --dry"
+  },
+  "dependencies": {
+    "@prisma/internals": "^5.22.0",
+    "handlebars": "^4.7.8",
+    "picocolors": "^1.0.0",
+    "mri": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
