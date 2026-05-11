@@ -13,6 +13,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "playground": "pnpm --filter @ethos/playground dev",
     "forge:gen:backend": "pnpm --filter @ethos/database db:generate && node tools/generators/forge-controller/index.js",
+    "forge:gen:frontend": "pnpm --filter @ethos-app/web gen:api && node tools/generators/forge-page/index.js",
     "prepare": "husky",
     "storybook": "pnpm --filter @ethos/ui storybook"
   },
@@ -33,6 +34,7 @@
     "lint-staged": "^15.0.0",
     "prettier": "^3.0.0",
     "prettier-plugin-tailwindcss": "^0.6.0",
+    "tsx": "^4.19.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.0.0"

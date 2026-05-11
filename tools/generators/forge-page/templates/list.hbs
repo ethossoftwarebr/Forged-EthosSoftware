@@ -1,0 +1,88 @@
+'use client';
+
+import { Button, DataTablePro, Input } from '@ethos/ui';
+import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+
+import { {{listOptions}} } from '@/generated/api/@tanstack/react-query.gen';
+
+import { {{model}}Columns } from './_components/Columns';
+
+const PAGE_SIZE = 20;
+
+/**
+ * Página de listagem de {{ModelPlural}}.
+ *
+ * Estados:
+ *  - paginação: page/PAGE_SIZE convertidos pra take/skip antes de bater na API.
+ *  - busca: campo `search` é repassado como query param.
+ *
+ * Customize livremente — pra travar este arquivo contra regen, remova o
+ * header AUTOGEN da primeira linha.
+ */
+export default function {{ModelPlural}}ListPage() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+
+  const { data, isLoading } = useQuery(
+    {{listOptions}}({
+      query: {
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
+        search,
+      },
+    }),
+  );
+  // V1: OpenAPI atual não expõe shape da resposta — cast pra acessar
+  // `items`/`total`. Quando @ApiOkResponse for adicionado no controller
+  // gen, troca por tipo gerado.
+  const list = (data ?? {}) as { items?: unknown[]; total?: number };
+
+  return (
+    <div className="space-y-6 p-6">
+      <header className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{{ModelPlural}}</h1>
+          <p className="text-sm text-muted-foreground">
+            Gerencie {{ModelPlural}} do seu tenant.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/{{slug}}/new">
+            <Plus className="mr-2 h-4 w-4" /> Novo {{Model}}
+          </Link>
+        </Button>
+      </header>
+
+      <div className="max-w-sm">
+        <Input
+          type="search"
+          placeholder="Buscar {{ModelPlural}}..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+        />
+      </div>
+
+      <DataTablePro
+        columns={ {{~model~}} Columns}
+        data={(list.items ?? []) as Record<string, unknown>[]}
+        loading={isLoading}
+        pagination={ {{~open~}}
+          page,
+          pageSize: PAGE_SIZE,
+          total: list.total ?? 0,
+          onPageChange: setPage,
+        {{~close~}} }
+        emptyState={ {{~open~}}
+          title: 'Nenhum {{Model}} encontrado',
+          description: search ? 'Ajuste sua busca.' : 'Comece criando o primeiro.',
+        {{~close~}} }
+      />
+    </div>
+  );
+}

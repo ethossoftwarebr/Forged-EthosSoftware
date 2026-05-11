@@ -1,0 +1,85 @@
+'use client';
+
+import { Button, Card, CardContent, CardHeader, CardTitle, Skeleton } from '@ethos/ui';
+import { useQuery } from '@tanstack/react-query';
+import { Pencil } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+
+import { {{findOneOptions}} } from '@/generated/api/@tanstack/react-query.gen';
+
+/**
+ * Página de detalhes (read-only) de um {{Model}} pelo id.
+ *
+ * Customize livremente — pra travar este arquivo contra regen, remova o
+ * header AUTOGEN da primeira linha.
+ */
+export default function {{Model}}ViewPage() {
+  const params = useParams<{ id: string }>();
+  const id = params.id;
+
+  const { data: raw, isLoading, error } = useQuery(
+    {{findOneOptions}}({ path: { id } }),
+  );
+  // V1: cast — OpenAPI atual não expõe shape do recurso (sem @ApiOkResponse
+  // no controller gen). Quando backend adicionar, troca por tipo gerado.
+  const data = (raw ?? null) as Record<string, unknown> | null;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 p-6 max-w-2xl">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="p-6">
+        <p className="text-sm text-destructive">
+          {{Model}} não encontrado.{' '}
+          <Link href="/{{slug}}" className="underline">
+            Voltar para a lista
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 p-6 max-w-2xl">
+      <header className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{String(data.{{labelField}})}</h1>
+          <p className="text-sm text-muted-foreground">Detalhes do {{Model}}.</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href={`/{{slug}}/${id}/edit`}>
+            <Pencil className="mr-2 h-4 w-4" /> Editar
+          </Link>
+        </Button>
+      </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+{{#each fields}}
+            <div>
+              <dt className="font-medium text-muted-foreground">{{this.label}}</dt>
+              <dd className="mt-1">
+{{#if this.isBoolean}}                {data.{{this.name}} ? 'Sim' : 'Não'}
+{{else if this.isDate}}                {data.{{this.name}} ? new Date(data.{{this.name}} as unknown as string).toLocaleString() : '—'}
+{{else}}                {data.{{this.name}} != null ? String(data.{{this.name}}) : '—'}
+{{/if}}              </dd>
+            </div>
+{{/each}}
+          </dl>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

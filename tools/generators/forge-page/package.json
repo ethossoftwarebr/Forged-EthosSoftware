@@ -1,0 +1,24 @@
+{
+  "name": "@ethos-tools/forge-page",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Forge CLI — schema Prisma marcado com /// @forge.generate(page) → 4 páginas Next.js (list/create/view/edit) + sidebar entry via Handlebars. IP da Ethos.",
+  "main": "index.js",
+  "bin": {
+    "forge-page": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dry": "node index.js --dry-run"
+  },
+  "dependencies": {
+    "@prisma/internals": "^5.22.0",
+    "handlebars": "^4.7.8",
+    "picocolors": "^1.0.0",
+    "mri": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,10 +1,10 @@
 'use client';
 
-import { DashboardLayout, defineSidebarConfig, type SidebarItemConfig } from '@ethos/ui';
-import { LayoutDashboard, Package, Settings } from 'lucide-react';
+import { DashboardLayout } from '@ethos/ui';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
 
+import { sidebarConfig } from '@/config/sidebar';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -18,6 +18,9 @@ import { useAuthStore } from '@/stores/auth-store';
  * Guard: leitura do `useAuthStore` só ocorre após `isHydrated=true` (set pelo
  * AuthProvider após GET /users/me). Antes disso, renderiza `null` pra evitar
  * flicker entre "loading" e "logged-out".
+ *
+ * Sidebar config: movida para `@/config/sidebar` (D6 — entradas geradas pelo
+ * `forge-page` ficam entre os marcadores AUTOGEN; Dashboard/Settings são manuais).
  */
 
 // `UserMenuAction` não é exportado pelo barrel; alinhe inline com o union em
@@ -30,35 +33,28 @@ type UserMenuAction =
   | 'theme:system'
   | 'signout';
 
-const sidebarItems: SidebarItemConfig[] = [
-  {
-    key: 'dashboard',
-    label: 'Dashboard',
-    href: '/dashboard',
-    icon: <LayoutDashboard className="h-4 w-4" />,
-  },
-  {
-    key: 'products',
-    label: 'Products',
-    href: '/products',
-    icon: <Package className="h-4 w-4" />,
-  },
-  {
-    key: 'settings',
-    label: 'Settings',
-    href: '/settings',
-    icon: <Settings className="h-4 w-4" />,
-  },
-];
-
-const sidebarConfig = defineSidebarConfig(sidebarItems);
-
+/**
+ * Resolve a `activeKey` da sidebar a partir do pathname atual.
+ *
+ * Heurística: o item com o `href` mais longo que prefixa o pathname vence
+ * (evita "/products" colidir com "/products/new" — ambos batem, mas o gerador
+ * de páginas só registra a raiz `/products` e queremos manter highlight nos
+ * sub-paths também). Itens sem `href` (groups) são ignorados.
+ */
 function activeKeyFromPath(pathname: string | null): string | undefined {
   if (!pathname) return undefined;
-  if (pathname.startsWith('/dashboard')) return 'dashboard';
-  if (pathname.startsWith('/products')) return 'products';
-  if (pathname.startsWith('/settings')) return 'settings';
-  return undefined;
+  let bestKey: string | undefined;
+  let bestLen = -1;
+  for (const item of sidebarConfig) {
+    if (!item.href) continue;
+    if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
+      if (item.href.length > bestLen) {
+        bestLen = item.href.length;
+        bestKey = item.key;
+      }
+    }
+  }
+  return bestKey;
 }
 
 export default function DashboardGroupLayout({ children }: { children: ReactNode }) {

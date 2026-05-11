@@ -1,0 +1,31 @@
+'use client';
+
+import type { Field } from '@ethos/ui';
+
+/**
+ * Fields gerados a partir do schema Prisma para o model {{Model}}.
+ * Campos excluídos automaticamente: id, createdAt, updatedAt, tenantId.
+ *
+ * Mapeamento de tipos Prisma → FieldType do `@ethos/ui` FormBuilder:
+ *   String                  → text
+ *   Int / Float / Decimal   → number
+ *   Boolean                 → checkbox
+ *   DateTime                → date
+ *   enum                    → select (options derivadas do enum)
+ *
+ * Pra customizar (helperText, placeholder, ordem), remova o header AUTOGEN
+ * da primeira linha deste arquivo — o gerador passará a respeitar suas mudanças.
+ */
+export const {{model}}FormFields: Field[] = [
+{{#each fields}}
+  {
+    type: '{{this.formFieldType}}',
+    name: '{{this.name}}',
+    label: '{{this.label}}',
+{{#if this.isRequired}}    required: true,
+{{/if}}{{#if this.enumValues}}    options: [
+{{#each this.enumValues}}      { value: '{{this}}', label: '{{this}}' },
+{{/each}}    ],
+{{/if}}  },
+{{/each}}
+];

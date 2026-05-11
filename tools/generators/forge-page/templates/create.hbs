@@ -1,0 +1,70 @@
+'use client';
+
+import { FormBuilder } from '@ethos/ui';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
+import { {{createMutation}} } from '@/generated/api/@tanstack/react-query.gen';
+
+import { {{model}}FormFields } from '../_components/FormFields';
+
+// V1: schema permissivo — OpenAPI atual não expõe body shape (controller usa
+// @ZodBody, Swagger não captura). Quando backend gen adicionar @ApiBody no
+// template, troca por `z{{controllerBase}}CreateBody` do zod.gen.
+const create{{Model}}Schema = z.object({}).passthrough();
+
+/**
+ * Página de criação de {{Model}}.
+ *
+ * Validação client = schema Zod derivado do OpenAPI (D5). Ao sucesso,
+ * invalida a query da lista e redireciona pra a página de detalhes do recurso.
+ *
+ * Customize livremente — pra travar este arquivo contra regen, remova o
+ * header AUTOGEN da primeira linha.
+ */
+export default function {{Model}}CreatePage() {
+  const router = useRouter();
+  const qc = useQueryClient();
+
+  const create = useMutation({{createMutation}}());
+
+  return (
+    <div className="space-y-6 p-6 max-w-2xl">
+      <header>
+        <h1 className="text-2xl font-semibold">Novo {{Model}}</h1>
+        <p className="text-sm text-muted-foreground">
+          Preencha os campos abaixo para criar um {{Model}}.
+        </p>
+      </header>
+
+      <FormBuilder
+        schema={create{{Model}}Schema}
+        fields={ {{~model~}} FormFields}
+        onSubmit={async (values) => {
+          try {
+            // V1: cast — OpenAPI atual não expõe body schema (controller usa
+            // @ZodBody, NestJS Swagger não captura). Cast pra unknown e depois
+            // pra forma esperada pelo mutation (que aceita Options<Data> — body
+            // inferido como never). Quando backend adicionar @ApiBody no template
+            // do forge-controller, troca isso pelo schema/type gerado.
+            const created = (await create.mutateAsync({ body: values } as never)) as { id?: string } | undefined;
+            await qc.invalidateQueries({
+              predicate: (q) => {
+                const k = q.queryKey?.[0];
+                return typeof k === 'object' && k !== null && (k as { _id?: string })._id === '{{controllerBase}}List';
+              },
+            });
+            toast.success('{{Model}} criado com sucesso.');
+            router.push(created?.id ? `/{{slug}}/${created.id}` : '/{{slug}}');
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao criar {{Model}}.');
+          }
+        }}
+        onCancel={() => router.push('/{{slug}}')}
+        submitLabel="Criar"
+      />
+    </div>
+  );
+}

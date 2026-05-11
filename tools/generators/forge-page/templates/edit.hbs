@@ -1,0 +1,85 @@
+'use client';
+
+import { FormBuilder, Skeleton } from '@ethos/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
+import {
+  {{findOneOptions}},
+  {{findOneQueryKey}},
+  {{updateMutation}},
+} from '@/generated/api/@tanstack/react-query.gen';
+
+import { {{model}}FormFields } from '../../_components/FormFields';
+
+// V1: schema permissivo — ver create.hbs.
+const update{{Model}}Schema = z.object({}).passthrough();
+
+/**
+ * Página de edição de um {{Model}} pelo id.
+ *
+ * Pré-popula o formulário via `useQuery` no findOne; ao submit, dispara a
+ * mutation de update + invalida queries da lista e do recurso. Validação
+ * via schema Zod parcial gerado pelo OpenAPI.
+ *
+ * Customize livremente — pra travar este arquivo contra regen, remova o
+ * header AUTOGEN da primeira linha.
+ */
+export default function {{Model}}EditPage() {
+  const params = useParams<{ id: string }>();
+  const id = params.id;
+  const router = useRouter();
+  const qc = useQueryClient();
+
+  const { data, isLoading } = useQuery({{findOneOptions}}({ path: { id } }));
+  const update = useMutation({{updateMutation}}());
+
+  if (isLoading || !data) {
+    return (
+      <div className="space-y-4 p-6 max-w-2xl">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 p-6 max-w-2xl">
+      <header>
+        <h1 className="text-2xl font-semibold">Editar {{Model}}</h1>
+        <p className="text-sm text-muted-foreground">
+          Atualize os campos abaixo. Campos não preenchidos permanecem inalterados.
+        </p>
+      </header>
+
+      <FormBuilder
+        schema={update{{Model}}Schema}
+        fields={ {{~model~}} FormFields}
+        defaultValues={data as never}
+        onSubmit={async (values) => {
+          try {
+            // V1: cast body/return — OpenAPI atual sem @ApiBody/@ApiOkResponse.
+            await update.mutateAsync({ path: { id }, body: values } as never);
+            await Promise.all([
+              qc.invalidateQueries({ queryKey: {{findOneQueryKey}}({ path: { id } }) }),
+              qc.invalidateQueries({
+                predicate: (q) => {
+                  const k = q.queryKey?.[0];
+                  return typeof k === 'object' && k !== null && (k as { _id?: string })._id === '{{controllerBase}}List';
+                },
+              }),
+            ]);
+            toast.success('{{Model}} atualizado.');
+            router.push(`/{{slug}}/${id}`);
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao atualizar {{Model}}.');
+          }
+        }}
+        onCancel={() => router.push(`/{{slug}}/${id}`)}
+        submitLabel="Salvar"
+      />
+    </div>
+  );
+}
