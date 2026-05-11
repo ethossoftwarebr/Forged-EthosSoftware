@@ -23,6 +23,10 @@ const nextjs = [
     },
     rules: {
       ...reactHooksPlugin.configs.recommended.rules,
+      // eslint-config-next@14 uses the deprecated context.getAncestors() API,
+      // which was removed in ESLint 9. App Router apps don't use next/head
+      // (metadata export instead), so disabling this rule is safe.
+      '@next/next/no-duplicate-head': 'off',
     },
   },
 ];
