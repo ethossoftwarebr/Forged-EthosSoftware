@@ -59,19 +59,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
       details = exception.flatten();
     } else if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
-      code = statusToCode(statusCode);
+      code = statusToCode(statusCode); // default por status
       const responseBody = exception.getResponse();
       if (typeof responseBody === 'string') {
         message = responseBody;
       } else if (responseBody && typeof responseBody === 'object') {
         const body = responseBody as Record<string, unknown>;
+        // Concern #2 do #7: preserva `code` quando o handler enviou body com code/details
+        // (ex.: ZodValidationPipe joga ZodError; AuthService.translateAuthError envia codes
+        // de domínio como INVALID_CREDENTIALS, ACCOUNT_LOCKED, EMAIL_TAKEN).
+        if (typeof body.code === 'string') {
+          code = body.code;
+        }
         message =
           typeof body.message === 'string'
             ? body.message
             : Array.isArray(body.message)
               ? (body.message as unknown[]).join(', ')
               : exception.message;
-        details = body;
+        details = body.details ?? body;
       } else {
         message = exception.message;
       }

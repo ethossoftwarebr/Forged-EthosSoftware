@@ -8,12 +8,17 @@ import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module';
+import { EnvService } from './config/env.module';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   // Pino logger — buffer logs no bootstrap, attach após módulos resolvidos.
   app.useLogger(app.get(Logger));
+
+  // EnvService (Concern #3 do #7) — substitui acesso direto a process.env.
+  // Já validado por Zod no boot do EnvModule, então `env.get(...)` é typed + safe.
+  const env = app.get(EnvService);
 
   // Hardening padrão.
   app.use(helmet());
@@ -22,7 +27,8 @@ async function bootstrap(): Promise<void> {
   // (cookie `access_token`) e pelo AuthController (cookie `refresh_token`).
   app.use(cookieParser());
 
-  const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
+  const corsOrigins = env
+    .get('CORS_ORIGINS')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -50,7 +56,7 @@ async function bootstrap(): Promise<void> {
     jsonDocumentUrl: 'api-docs-json',
   });
 
-  const port = Number(process.env.PORT ?? 3001);
+  const port = env.get('PORT');
   await app.listen(port);
 }
 

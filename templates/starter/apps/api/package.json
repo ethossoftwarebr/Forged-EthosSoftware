@@ -11,10 +11,13 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "db:seed": "echo \"no seed yet\" && exit 0"
+    "db:generate": "pnpm --filter @ethos/database db:generate",
+    "db:migrate": "pnpm --filter @ethos/database db:migrate",
+    "db:studio": "pnpm --filter @ethos/database db:studio",
+    "db:seed": "pnpm --filter @ethos/database db:seed"
+  },
+  "prisma": {
+    "schema": "../../../packages/database/prisma/schema.prisma"
   },
   "dependencies": {
     "@ethos/api-base": "workspace:^",

@@ -1,35 +1,41 @@
-import { Controller, Get } from '@nestjs/common';
+import { PRISMA_CLIENT_TOKEN, Public } from '@ethos/api-base';
+import type { PrismaClient } from '@ethos/database';
+import { Controller, Get, Inject } from '@nestjs/common';
 import {
   DiskHealthIndicator,
   HealthCheck,
+  type HealthCheckResult,
   HealthCheckService,
   MemoryHealthIndicator,
+  PrismaHealthIndicator,
 } from '@nestjs/terminus';
 
 /**
  * Health endpoint exposto em GET /health.
  *
  * Checks ativos:
- * - memory_heap: heap usado < 200 MB (alinha com defaults Forge; ajustar via env quando #8 trouxer EnvService aqui)
+ * - memory_heap: heap usado < 200 MB
  * - disk: uso < 90% do volume raiz (cross-platform: C:\ no Windows, / em Unix)
+ * - database: ping no Prisma via PrismaHealthIndicator (#8 — Concern #4 do #7)
  *
- * Notas:
- * - PrismaHealthIndicator será habilitado no prompt #8, quando @ethos/database existir
- *   e expor um PrismaService injetável. Por ora, ficam só os checks de runtime.
- * - Sem `@Public()` aqui — esse decorator só passa a existir após o #8 (auth global guard).
- *   Enquanto não há JwtAuthGuard global, a rota é acessível por padrão.
+ * `@Public()` (Concern #4 do #7) — opt-out do JwtAuthGuard global registrado em
+ * AppModule. Sem isso o endpoint /health retornaria 401 sem cookie, quebrando
+ * orchestrators / load balancers que precisam pollar liveness.
  */
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly memory: MemoryHealthIndicator,
     private readonly disk: DiskHealthIndicator,
+    private readonly prismaHealth: PrismaHealthIndicator,
+    @Inject(PRISMA_CLIENT_TOKEN) private readonly prisma: PrismaClient,
   ) {}
 
   @Get()
   @HealthCheck()
-  check() {
+  check(): Promise<HealthCheckResult> {
     return this.health.check([
       () => this.memory.checkHeap('memory_heap', 200 * 1024 * 1024),
       () =>
@@ -37,7 +43,7 @@ export class HealthController {
           path: process.platform === 'win32' ? 'C:\\' : '/',
           thresholdPercent: 0.9,
         }),
-      // PrismaHealthIndicator — habilitado em #8 quando @ethos/database existir.
+      () => this.prismaHealth.pingCheck('database', this.prisma),
     ]);
   }
 }

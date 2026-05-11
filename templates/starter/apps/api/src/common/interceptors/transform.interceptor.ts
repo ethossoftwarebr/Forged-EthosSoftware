@@ -19,10 +19,17 @@ export interface ApiSuccessEnvelope<T> {
 }
 
 const SWAGGER_PATH_REGEX = /^\/api-docs/;
+const HEALTH_PATH_REGEX = /^\/health/;
 
 function shouldSkip(payload: unknown, request: Request, response: Response): boolean {
   // Swagger UI + spec JSON precisam do shape original (HTML / OpenAPI doc).
   if (SWAGGER_PATH_REGEX.test(request?.url ?? '')) {
+    return true;
+  }
+
+  // Concern #5 do #7: Terminus já retorna shape próprio { status, info, error, details }.
+  // Envelopar quebra clientes que parseiam esse shape (k8s liveness, Railway healthcheck).
+  if (HEALTH_PATH_REGEX.test(request?.url ?? '')) {
     return true;
   }
 

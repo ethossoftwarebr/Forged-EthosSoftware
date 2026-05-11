@@ -23,12 +23,14 @@
     "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
+    "@ethos/auth": "workspace:*",
     "@ethos/config": "workspace:*",
     "prisma": "^5.22.0",
     "tsx": "^4.19.0",
     "typescript": "^5.4.0"
   },
   "prisma": {
-    "schema": "./prisma/schema.prisma"
+    "schema": "./prisma/schema.prisma",
+    "seed": "tsx ./prisma/seed.ts"
   }
 }
