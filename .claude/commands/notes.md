@@ -4,8 +4,8 @@
 
 > Resume artifact pra novas sessões do Claude Code. Lido automaticamente pelo agent durante pipelines; serve de baseline pra qualquer dev/sessão que pegar o projeto.
 >
-> **Atualizado:** 2026-05-08 (sessão 4 — pós #7)
-> **Estado:** prompts #1–#7 concluídos. UI lib completa + **API base do starter pronta** (NestJS 10 + Prisma 5 stub + Pino + Helmet + Compression + Swagger + Zod env + envelope `{data,meta}` + `/health` Terminus + Dockerfile multi-stage). Próximo: prompt #8 (Auth + Multi-tenant) — spec já criada em `.claude/spec/active/2026-05-08-ethos-auth-multitenant/` com 11 decisões D1-D11 propostas (pending dev approval ao rodar `/mustard:resume` na sessão 5).
+> **Atualizado:** 2026-05-11 (sessão 5 — pós #8)
+> **Estado:** prompts #1–#8 concluídos. UI lib completa + API base do starter + **Auth completo + Multi-tenant + white-label-ready** pronto. Stack: argon2id (D1 via @node-rs/argon2) + jose EdDSA com JWKS rotation (D13 hardening — algorithms pinado, kid, refresh hasheado, lint rule custom), AuthAdapter pattern (D14.1) + NativeAuthAdapter default + interfaces OAuth/MFA/Passwordless schema-ready pra #8.5/#8.6/#8.7, AsyncLocalStorage tenant isolation, AuditLog interceptor síncrono (BullMQ refactor em #15), white-label fields no Tenant (D15 — UI em #18). Cookies httpOnly+secure+sameSite=strict paths /api e /api/auth/refresh. RolesGuard global como 2º APP_GUARD. JwtAuthGuard global + @Public em register/login/refresh. Cross-tenant 404 via findFirst+TenantMember join. Próximo: prompt #9 (Geradores Backend) — spec criada em `.claude/spec/active/2026-05-11-ethos-gen-backend/` com 8 decisões D1-D8 propostas (pending dev approval ao rodar `/mustard:resume` na sessão 6).
 
 ## 1. O que é o projeto
 
@@ -50,6 +50,18 @@ Documentação completa em `docs/` (14 .md) e `CLAUDE.md` na raiz. `docs/12-PROM
 ## 4. Progresso (commits no main, pushados em origin)
 
 ```
+13fd965  fix(database): quebra cycle @ethos/database <-> @ethos/auth no seed (wave 4 #8) — QA fix
+39bf35b  feat(api): wire-up final + concerns #7 + seed (wave 4 do prompt #8) — Auth+MultiTenant FINAL
+91ff22c  feat(api): tenants module com invitations + white-label updates (wave 3 do prompt #8)
+cd3e0de  feat(api): users module com cross-tenant 404 + update me sanitizado (wave 3 do prompt #8)
+1a98faf  feat(api): authmodule com register/login/refresh/logout/me (wave 2 do prompt #8)
+4027e69  feat(config): eslint rule jose-require-algorithms d13.8 (wave 1 do prompt #8)
+f42aaf6  feat(api-base): guards + interceptors (wave 1 do prompt #8)
+2c00415  feat(api-base): async local storage + decorators (wave 1 do prompt #8)
+bd010a1  feat(auth): native adapter impl com lockout d14.6 + rotation d5 (wave 1 do prompt #8)
+7720954  feat(auth): adapter + interfaces oauth/mfa/passwordless (wave 1 do prompt #8)
+74eb215  feat(auth): argon2id helpers + jose JWT EdDSA + JWKS rotation D13.4 (wave 1 do prompt #8)
+c0326b5  feat(database): schema 9 models + migration init + Prisma wrapper + tenant extension (wave 1 do prompt #8)
 23e575a  feat(api): health endpoint + prisma stub + Dockerfile multi-stage (wave 3 do prompt #7) — API base FINAL
 ae0714e  feat(api): common filters + interceptors + pipes + env schema (wave 2 do prompt #7)
 7065ea1  chore(api): bootstrap NestJS 10 em templates/starter/apps/api/ (wave 1 do prompt #7)
