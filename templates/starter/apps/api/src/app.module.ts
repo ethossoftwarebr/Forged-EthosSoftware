@@ -16,6 +16,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { EnvModule } from './config/env.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -50,6 +51,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     // pros guards/interceptors globais abaixo.
     AuthModule,
     UsersModule,
+    TenantsModule,
   ],
   controllers: [AppController],
   providers: [
