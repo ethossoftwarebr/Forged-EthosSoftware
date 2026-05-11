@@ -1,3 +1,4 @@
+import { AuditLogInterceptor, JwtAuthGuard, MultiTenantInterceptor } from '@ethos/api-base';
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -9,12 +10,13 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { EnvModule } from './config/env.module';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
 @Module({
   imports: [
-    // Validação Zod das envs no boot (Wave 2). EnvModule é @Global, expõe EnvService tipado.
+    // Validação Zod das envs no boot. EnvModule é @Global, expõe EnvService tipado.
     EnvModule,
     LoggerModule.forRoot({
       pinoHttp: {
@@ -22,19 +24,43 @@ const isProduction = process.env.NODE_ENV === 'production';
         transport: isProduction
           ? undefined
           : { target: 'pino-pretty', options: { singleLine: true } },
+        // Princípio CLAUDE.md: senhas/tokens NUNCA em log.
+        redact: {
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.body.password',
+            'req.body.refreshToken',
+            'res.headers["set-cookie"]',
+          ],
+          remove: false,
+        },
       },
     }),
-    // 60 req/min default (D16). Overrides por endpoint vêm no #8.
+    // 60 req/min default. Overrides por endpoint vêm em Wave 3+.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
-    // Health endpoint via Terminus (Wave 3). PrismaHealthIndicator entra no #8.
     HealthModule,
+    // AuthModule é @Global e provê PRISMA_CLIENT_TOKEN + AUTH_ADAPTER_TOKEN
+    // pros guards/interceptors globais abaixo.
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+
+    // Guards globais: throttler primeiro (proteção DDoS), depois auth.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+
+    // Filters globais.
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+
+    // Interceptors globais. Ordem: TransformInterceptor (response shape) →
+    // MultiTenantInterceptor (abre ALS) → AuditLogInterceptor (lê ALS).
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: MultiTenantInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
+
     // ZodValidationPipe NÃO é APP_PIPE: precisa de schema arg por rota.
     // Use `@ZodBody(schema)` ou `@Body(new ZodValidationPipe(schema))` no handler.
   ],

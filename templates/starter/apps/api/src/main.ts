@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
@@ -17,6 +18,9 @@ async function bootstrap(): Promise<void> {
   // Hardening padrão.
   app.use(helmet());
   app.use(compression());
+  // cookie-parser popula `request.cookies` — consumido pelo JwtAuthGuard
+  // (cookie `access_token`) e pelo AuthController (cookie `refresh_token`).
+  app.use(cookieParser());
 
   const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3000')
     .split(',')

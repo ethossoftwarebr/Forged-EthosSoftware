@@ -26,10 +26,29 @@ export const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   /**
-   * JWT secret. Mínimo 16 chars nesta fase (placeholder pro #8).
-   * O #8 vai apertar pra >=32 + obrigar entropy mínima em produção.
+   * JWT keyset (D13 — hardening). `JWT_SECRET` foi removido (HS256/HMAC proibido por D13.1).
+   *
+   * Assinatura: EdDSA / Ed25519. Chaves em PEM:
+   *  - JWT_PRIVATE_KEY_CURRENT: PKCS8 (BEGIN PRIVATE KEY)
+   *  - JWT_PUBLIC_KEY_CURRENT:  SPKI   (BEGIN PUBLIC KEY)
+   *  - JWT_KID_CURRENT:         string identificadora (ex: "2026-05-10")
+   *
+   * Rotação (D13.4): popule JWT_KID_PREVIOUS + JWT_PUBLIC_KEY_PREVIOUS pra aceitar
+   * tokens assinados com a chave anterior durante a janela de transição.
+   *
+   * Gere as chaves com: `pnpm --filter @ethos/auth generate-keys`
    */
-  JWT_SECRET: z.string().min(16),
+  JWT_KID_CURRENT: z.string().min(1),
+  JWT_PRIVATE_KEY_CURRENT: z.string().includes('-----BEGIN PRIVATE KEY-----'),
+  JWT_PUBLIC_KEY_CURRENT: z.string().includes('-----BEGIN PUBLIC KEY-----'),
+  JWT_KID_PREVIOUS: z.string().min(1).optional(),
+  JWT_PUBLIC_KEY_PREVIOUS: z.string().includes('-----BEGIN PUBLIC KEY-----').optional(),
+
+  /**
+   * Cookie domain (opcional). Em dev (NODE_ENV !== production) deixe vazio
+   * para o browser usar host-only cookies.
+   */
+  COOKIE_DOMAIN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
