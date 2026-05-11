@@ -98,8 +98,8 @@ Pra cada model, gera:
 **`create-client.dto.ts`:**
 
 ```typescript
-import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsEmail, IsOptional, IsBoolean } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsEmail, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateClientDto {
   @ApiProperty()
@@ -125,8 +125,8 @@ export class CreateClientDto {
 **`update-client.dto.ts`:**
 
 ```typescript
-import { PartialType } from "@nestjs/swagger";
-import { CreateClientDto } from "./create-client.dto";
+import { PartialType } from '@nestjs/swagger';
+import { CreateClientDto } from './create-client.dto';
 
 export class UpdateClientDto extends PartialType(CreateClientDto) {}
 ```
@@ -136,9 +136,9 @@ export class UpdateClientDto extends PartialType(CreateClientDto) {}
 Pra cada model, gera `[model].base.service.ts`:
 
 ```typescript
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
-import { Prisma } from "@prisma/client";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class BaseClientService {
@@ -283,17 +283,13 @@ export class {{pascalCase name}}Controller {
 `tools/generators/forge-controller/templates/service.hbs`:
 
 ```handlebars
-import { Injectable } from "@nestjs/common"; import { Base{{pascalCase
-  name
-}}Service } from "../../generated/services/{{kebabCase name}}/{{kebabCase
-  name
-}}.base.service"; @Injectable() export class
-{{pascalCase name}}Service extends Base{{pascalCase name}}Service { // Adicione
-aqui suas customizações. // Exemplo: // async create(data: Create{{pascalCase
-  name
-}}Dto & { tenantId: string }, userId: string) { // const result = await
-super.create(data); // await this.notifications.send(userId, "Cliente criado");
-// return result; // } }
+import { Injectable } from "@nestjs/common"; import { Base{{pascalCase name}}Service } from
+"../../generated/services/{{kebabCase name}}/{{kebabCase name}}.base.service"; @Injectable() export
+class
+{{pascalCase name}}Service extends Base{{pascalCase name}}Service { // Adicione aqui suas
+customizações. // Exemplo: // async create(data: Create{{pascalCase name}}Dto & { tenantId: string
+}, userId: string) { // const result = await super.create(data); // await
+this.notifications.send(userId, "Cliente criado"); // return result; // } }
 ```
 
 Esse arquivo é gerado **uma vez** (não sobrescrito em regenerações). Você edita à vontade.
@@ -303,13 +299,13 @@ Esse arquivo é gerado **uma vez** (não sobrescrito em regenerações). Você e
 `tools/generators/forge-controller/templates/module.hbs`:
 
 ```handlebars
-import { Module } from "@nestjs/common"; import { PrismaModule } from
-"../../prisma/prisma.module"; import {
+import { Module } from "@nestjs/common"; import { PrismaModule } from "../../prisma/prisma.module";
+import {
 {{pascalCase name}}Service } from "./{{kebabCase name}}.service"; import {
-{{pascalCase name}}Controller } from "./{{kebabCase name}}.controller";
-@Module({ imports: [PrismaModule], controllers: [{{pascalCase name}}Controller],
-providers: [{{pascalCase name}}Service], exports: [{{pascalCase name}}Service],
-}) export class
+{{pascalCase name}}Controller } from "./{{kebabCase name}}.controller"; @Module({ imports:
+[PrismaModule], controllers: [{{pascalCase name}}Controller], providers: [{{pascalCase
+  name
+}}Service], exports: [{{pascalCase name}}Service], }) export class
 {{pascalCase name}}Module {}
 ```
 
@@ -319,9 +315,9 @@ O gerador também atualiza `src/app.module.ts` adicionando os novos módulos:
 
 ```typescript
 // Início: AUTOGEN START - não edite entre os marcadores
-import { ClientModule } from "./modules/client/client.module";
-import { OrderModule } from "./modules/order/order.module";
-import { ProductModule } from "./modules/product/product.module";
+import { ClientModule } from './modules/client/client.module';
+import { OrderModule } from './modules/order/order.module';
+import { ProductModule } from './modules/product/product.module';
 // AUTOGEN END
 
 @Module({
@@ -363,7 +359,7 @@ export class ClientService extends BaseClientService {
 
     await this.emailService.sendWelcome(client.email);
     await this.auditService.log({
-      action: "client.created",
+      action: 'client.created',
       entityId: client.id,
       userId,
       tenantId: data.tenantId,
@@ -378,14 +374,14 @@ export class ClientService extends BaseClientService {
 
 ```typescript
 // src/modules/client/client.controller.ts (você pode editar — não é regenerado se você marcar com @custom)
-@Controller("clients")
+@Controller('clients')
 export class ClientController extends BaseClientController {
   // ... endpoints gerados ...
 
   // Adicione novos endpoints à vontade
-  @Get(":id/orders")
-  @ApiOperation({ summary: "List orders for a client" })
-  async listOrders(@Param("id") id: string, @CurrentTenant() tenantId: string) {
+  @Get(':id/orders')
+  @ApiOperation({ summary: 'List orders for a client' })
+  async listOrders(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     return this.service.listOrders(id, tenantId);
   }
 }
@@ -434,12 +430,10 @@ Todo backend gerado pela Forge tem essas peças sempre ativas:
 
 ```typescript
 // Implementação em packages/api-base/src/decorators/current-tenant.decorator.ts
-export const CurrentTenant = createParamDecorator(
-  (_, ctx: ExecutionContext): string => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.user?.tenantId;
-  },
-);
+export const CurrentTenant = createParamDecorator((_, ctx: ExecutionContext): string => {
+  const request = ctx.switchToHttp().getRequest();
+  return request.user?.tenantId;
+});
 ```
 
 ### 2. Audit log
@@ -454,7 +448,7 @@ export function createAuditMiddleware(prisma: PrismaClient) {
     const result = await next(params);
     const after = result;
 
-    if (["create", "update", "delete"].includes(params.action)) {
+    if (['create', 'update', 'delete'].includes(params.action)) {
       await prisma.auditLog.create({
         data: {
           action: `${params.model}.${params.action}`,
@@ -496,12 +490,12 @@ Em `main.ts`:
 ```typescript
 const config = new DocumentBuilder()
   .setTitle(process.env.APP_NAME)
-  .setVersion("1.0")
+  .setVersion('1.0')
   .addBearerAuth()
   .build();
 
 const document = SwaggerModule.createDocument(app, config);
-SwaggerModule.setup("api-docs", app, document);
+SwaggerModule.setup('api-docs', app, document);
 // Expõe /api-docs (UI) e /api-docs-json (spec JSON)
 ```
 
@@ -525,14 +519,14 @@ export function withEncryption(prisma: PrismaClient) {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           // Encrypt antes de save
-          if (["create", "update"].includes(operation)) {
+          if (['create', 'update'].includes(operation)) {
             args.data = encryptSensitiveFields(model, args.data);
           }
 
           const result = await query(args);
 
           // Decrypt depois de read
-          if (["findUnique", "findFirst", "findMany"].includes(operation)) {
+          if (['findUnique', 'findFirst', 'findMany'].includes(operation)) {
             return decryptSensitiveFields(model, result);
           }
 
@@ -640,3 +634,41 @@ Pra esses casos, ignore a geração e crie módulos manuais. A Forge não força
 4. Backend reinicia, endpoints `/orders` (GET, POST, PATCH, DELETE, GET :id) já funcionam
 5. Dev customiza `OrderService` se precisar de regra específica
 6. OpenAPI atualizado em `/api-docs-json` → consumível pelo frontend (próximo arquivo)
+
+---
+
+## Implementação V1 — aprendizados (prompt #9, 2026-05-11)
+
+### Script real é `forge:gen:backend` (sem o `e`)
+
+Em alguns trechos acima o doc usa `pnpm forge:generate:backend`. Na v1 ficou `pnpm forge:gen:backend` (mais curto, alinhado com `forge:gen:frontend` do #11). Próxima revisão do doc unifica.
+
+### Service NÃO extends do `BaseClientService` gerado
+
+O spec original mandava `service.hbs extends BaseClientService` (saída de `@prisma-utils/prisma-crud-generator`). Na prática, esse generator emite com `import { PrismaService } from 'nestjs-prisma'` — uma instância Prisma **separada** da `@ethos/database` (que provê `PRISMA_CLIENT_TOKEN`). Importar dali quebraria o `withTenant` extension + AuditLog interceptor.
+
+**Decisão V1**: o `service.hbs` gera um Service que usa o `Repository` Forge (também gerado), que injeta `PRISMA_CLIENT_TOKEN`. Os arquivos em `src/generated/crud/` ficam como "stubs disponíveis" mas o runtime não os usa.
+
+### Repository pattern obrigatório (cross-tenant safe sem `@@unique` composto)
+
+`repository.hbs` usa `updateMany`/`deleteMany` com `where: { id, tenantId }` + `findUnique` follow-up no update. Isso garante que `update`/`delete` em ID que existe em outro tenant retorne 404, não 500 (`P2025`). Pattern testado em runtime durante o smoke test.
+
+### DTO Zod hardcoded por model (V1)
+
+`dto.hbs` gera Zod schema fixo (`name/sku/price/description`) com `// TODO(forge): em V2 gerar a partir do schema.prisma`. Mapping field-by-field de Prisma → Zod tem complexidade (tipos `Decimal`, `Json`, optional vs nullable, etc.) — V2 endereça. Dev customiza fields editando o DTO direto.
+
+### `definiteAssignmentAssertion` é no-op no `prisma-generator-nestjs-dto@1.x`
+
+Setado como `"true"` no schema mas o pacote não honra essa flag em alguns paths. Resultado: classes geradas em `src/generated/dto/` têm `name: string;` sem `!:`, e em `strict` mode TS reclama. Solução aplicada: `tsconfig.json` E `tsconfig.build.json` da api **excluem `src/generated/**`\*\*. Os arquivos são git-ignored e não fazem parte do runtime.
+
+### Helper Handlebars `resourcePath` removido
+
+Colisão com a context var de mesmo nome (`{{resourcePath}}` no template virou call ao helper com options object). Os helpers `kebab/pascal/camel/plural` ficam; `resourcePath` agora é só context var.
+
+### Validação D3 (Modelo B) automática
+
+Smoke test do Modelo B em CI futuro: adicionar comentário marker em `products.service.ts`, rodar `forge:gen:backend`, confirmar marker sobrevive. Fluxo já manualmente validado em #9 CLOSE.
+
+### Provider `nestjsCrud`
+
+Use `provider = "prisma-crud-generator"` (binário em `node_modules/.bin/`), não `node node_modules/@prisma-utils/prisma-crud-generator/dist/main.js` — o pacote v1.3.x não expõe `dist/`.
