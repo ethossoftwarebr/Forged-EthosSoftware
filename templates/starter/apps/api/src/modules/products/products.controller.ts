@@ -14,20 +14,30 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { ZodBody } from '../../common/pipes/zod-validation.pipe';
 
 import {
+  CreateProductDtoClass,
   CreateProductSchema,
   type CreateProductDto,
+  UpdateProductDtoClass,
   UpdateProductSchema,
   type UpdateProductDto,
+  ProductEntity,
+  PaginatedProductResponse,
 } from './dto/product.dto';
 import { type ProductItem, type ListProductResult, ProductsService } from './products.service';
 
 /**
- * ProductsController — gerado pelo Forge (prompt #9).
+ * ProductsController — gerado pelo Forge (prompt #9 + #11.5).
  *
  * Modelo B (D3): controller.ts é regenerado a cada `forge:gen:backend`.
  * Para customizar lógica de negócio, edite `products.service.ts` (preservado).
@@ -41,6 +51,9 @@ import { type ProductItem, type ListProductResult, ProductsService } from './pro
  *  - DELETE: owner, admin
  *
  * Audit em mutations (D6): @Audit em POST/PATCH/DELETE; GETs sem audit.
+ *
+ * OpenAPI (#11.5): `@ApiBody({ type: ...DtoClass })` + `@Api*Response({ type: Entity })`
+ * em cada verbo — hey-api gera tipos e zod schemas a partir disso.
  */
 @ApiTags('products')
 @Controller('products')
@@ -57,6 +70,7 @@ export class ProductsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @Roles('owner', 'admin', 'manager', 'member', 'viewer')
+  @ApiOkResponse({ type: PaginatedProductResponse })
   async list(
     @CurrentUser() session: AuthSession,
     @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
@@ -89,6 +103,7 @@ export class ProductsController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @Roles('owner', 'admin', 'manager', 'member', 'viewer')
+  @ApiOkResponse({ type: ProductEntity })
   async findOne(
     @CurrentUser() session: AuthSession,
     @Param('id') id: string,
@@ -104,6 +119,8 @@ export class ProductsController {
   @HttpCode(HttpStatus.CREATED)
   @Roles('owner', 'admin', 'manager')
   @Audit('product.create')
+  @ApiBody({ type: CreateProductDtoClass })
+  @ApiCreatedResponse({ type: ProductEntity })
   async create(
     @CurrentUser() session: AuthSession,
     @ZodBody(CreateProductSchema) dto: CreateProductDto,
@@ -119,6 +136,8 @@ export class ProductsController {
   @HttpCode(HttpStatus.OK)
   @Roles('owner', 'admin', 'manager')
   @Audit('product.update')
+  @ApiBody({ type: UpdateProductDtoClass })
+  @ApiOkResponse({ type: ProductEntity })
   async update(
     @CurrentUser() session: AuthSession,
     @Param('id') id: string,
@@ -135,6 +154,7 @@ export class ProductsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles('owner', 'admin')
   @Audit('product.delete')
+  @ApiNoContentResponse()
   async remove(@CurrentUser() session: AuthSession, @Param('id') id: string): Promise<void> {
     await this.productsService.remove(session.tenantId, id);
   }

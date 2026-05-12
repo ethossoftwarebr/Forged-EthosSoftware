@@ -138,11 +138,11 @@ function buildContext(model, iconOverride, enums = []) {
   // Plugins:
   //  - `@tanstack/react-query` → naming `{{name}}Options` (query) / `{{name}}Mutation` (mutation)
   //  - `zod` → schemas com prefixo `z` + sufixo `Body`/`Data`/`Response` (request bodies → `z{Name}Body`)
-  const controllerBase = `${toCamelCase(name)}sController`; // productsController
-  // CONCERN W3: pluralizer simples — `Categorys` em vez de `Categories` para o
-  // controllerBase quando model termina em `y` (ex: Category → categorysController).
-  // O nome real do controller é decidido pela API; este só precisa bater com o que
-  // hey-api gera. Override pode vir via @forge.controller(name) em V2.
+  // W4 fix: usa `pluralize()` pra cobrir `Category → categoriesController`
+  // (antes saía `categorysController` com concat de `s` cru). Mantém alinhamento
+  // com o nome real da classe NestJS — qualquer override fica via /// @forge.controller()
+  // em V2 (não temos hoje).
+  const controllerBase = `${pluralize(toCamelCase(name))}Controller`; // productsController | categoriesController
 
   return {
     modelName: name,

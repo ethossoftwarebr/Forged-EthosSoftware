@@ -1,24 +1,88 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { z } from 'zod';
 
 /**
- * {{className}} DTOs — gerados pelo Forge (prompt #9).
+ * {{className}} DTOs — gerados pelo Forge (prompt #9 + #11.5).
  *
- * Schemas Zod strict (.strict()) — chaves extras rejeitadas com 400 (D7).
- * `tenantId` NUNCA aceito no body (vem do JWT via @CurrentUser).
+ * Dupla expressão (D7 — single source of edit fica neste template .hbs):
+ *  - **Zod schemas** (strict — chaves extras rejeitam com 400) são a fonte de
+ *    verdade da validation em runtime. Usadas via `@ZodBody(Schema)`.
+ *  - **Classes paralelas com @ApiProperty** existem APENAS pra introspection
+ *    do `@nestjs/swagger`. Sem class-validator (validação já é Zod).
  *
- * TODO(forge): em V2 esses fields serão gerados a partir do schema.prisma —
- * por enquanto, ajuste manualmente conforme campos do model.
+ * `tenantId` NUNCA aparece nas classes Create/Update — vem do JWT (CLAUDE.md).
  */
+
+// ============================================================================
+// Create{{className}}
+// ============================================================================
 
 export const Create{{className}}Schema = z
   .object({
-    name: z.string().min(1, 'name é obrigatório'),
-    sku: z.string().min(1, 'sku é obrigatório'),
-    price: z.coerce.number().nonnegative('price deve ser >= 0'),
-    description: z.string().optional(),
+{{#each createFields}}
+    {{name}}: {{{zodLine}}},
+{{/each}}
   })
   .strict();
 export type Create{{className}}Dto = z.infer<typeof Create{{className}}Schema>;
 
+/**
+ * Classe espelho do Create{{className}}Schema — usada SÓ pra OpenAPI via
+ * `@ApiBody({ type: Create{{className}}DtoClass })`. Não usar em runtime.
+ */
+export class Create{{className}}DtoClass {
+{{#each createFields}}
+  @ApiProperty({ type: {{oapiType}}, required: {{required}} })
+  {{name}}{{#if optional}}?{{else}}!{{/if}}: {{tsType}};
+
+{{/each}}
+}
+
+// ============================================================================
+// Update{{className}} — todos os fields opcionais (PATCH semantics)
+// ============================================================================
+
 export const Update{{className}}Schema = Create{{className}}Schema.partial().strict();
 export type Update{{className}}Dto = z.infer<typeof Update{{className}}Schema>;
+
+export class Update{{className}}DtoClass {
+{{#each createFields}}
+  @ApiProperty({ type: {{oapiType}}, required: false })
+  {{name}}?: {{tsType}};
+
+{{/each}}
+}
+
+// ============================================================================
+// {{className}}Entity — shape de response (usado em @ApiOkResponse/@ApiCreatedResponse)
+// `tenantId` NÃO é exposto na entity (D7 — não vaza contexto multi-tenant).
+// ============================================================================
+
+export class {{className}}Entity {
+{{#each entityFields}}
+  @ApiProperty({ type: {{oapiType}}, required: {{required}} })
+  {{name}}{{#if optional}}?{{else}}!{{/if}}: {{tsType}};
+
+{{/each}}
+}
+
+// ============================================================================
+// Paginated{{className}}Response — wrapper de listagem (GET /{{resourcePath}}).
+// W4 (#11.5): classe concreta (sem $ref) — hey-api codegen funciona melhor com
+// resposta concreta `{ items, total, take, skip }` do que com generic wrapper.
+// Service retorna `List{{className}}Result`; este é o shape exposto via OpenAPI.
+// ============================================================================
+
+export class Paginated{{className}}Response {
+  @ApiProperty({ type: [{{className}}Entity], description: 'Items da página' })
+  items!: {{className}}Entity[];
+
+  @ApiProperty({ type: Number, description: 'Total de itens (sem paginação)' })
+  total!: number;
+
+  @ApiProperty({ type: Number })
+  take!: number;
+
+  @ApiProperty({ type: Number })
+  skip!: number;
+}

@@ -18,6 +18,12 @@ out/
 .env.production
 .env.test
 !.env.example
+# Defesa anti-drift (Wave 5 prompt #11.5): Prisma CLI 5.x auto-cria .env
+# no diretório do schema se faltar. Forçamos source-of-truth única na raiz
+# via dotenv-cli (`dotenv -e ../../.env --` em packages/database/package.json).
+# Se reaparecer um .env aqui, é drift — git ignora.
+packages/*/.env
+packages/*/.env.*
 
 # Coverage / reports
 coverage/

@@ -20,6 +20,9 @@ const PAGE_SIZE = 20;
  *  - paginação: page/PAGE_SIZE convertidos pra take/skip antes de bater na API.
  *  - busca: campo `search` é repassado como query param.
  *
+ * Tipo do `data` vem inferido do `PaginatedProductResponse` (gerado pelo
+ * backend via @ApiOkResponse). Não há mais cast estrutural.
+ *
  * Customize livremente — pra travar este arquivo contra regen, remova o
  * header AUTOGEN da primeira linha.
  */
@@ -36,10 +39,8 @@ export default function ProductsListPage() {
       },
     }),
   );
-  // V1: OpenAPI atual não expõe shape da resposta — cast pra acessar
-  // `items`/`total`. Quando @ApiOkResponse for adicionado no controller
-  // gen, troca por tipo gerado.
-  const list = (data ?? {}) as { items?: unknown[]; total?: number };
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
 
   return (
     <div className="space-y-6 p-6">
@@ -69,9 +70,9 @@ export default function ProductsListPage() {
 
       <DataTablePro
         columns={productColumns}
-        data={(list.items ?? []) as Record<string, unknown>[]}
+        data={items}
         loading={isLoading}
-        pagination={{ page, pageSize: PAGE_SIZE, total: list.total ?? 0, onPageChange: setPage }}
+        pagination={{ page, pageSize: PAGE_SIZE, total, onPageChange: setPage }}
         emptyState={{
           title: 'Nenhum Product encontrado',
           description: search ? 'Ajuste sua busca.' : 'Comece criando o primeiro.',

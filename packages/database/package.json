@@ -12,12 +12,12 @@
   "scripts": {
     "lint": "echo 'placeholder'",
     "typecheck": "tsc --noEmit",
-    "db:generate": "prisma generate --schema=./prisma/schema.prisma",
-    "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
-    "db:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
-    "db:studio": "prisma studio --schema=./prisma/schema.prisma",
-    "db:reset": "prisma migrate reset --schema=./prisma/schema.prisma",
-    "db:seed": "tsx ./prisma/seed.ts"
+    "db:generate": "dotenv -e ../../.env -- prisma generate --schema=./prisma/schema.prisma",
+    "db:migrate": "dotenv -e ../../.env -- prisma migrate dev --schema=./prisma/schema.prisma",
+    "db:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy --schema=./prisma/schema.prisma",
+    "db:studio": "dotenv -e ../../.env -- prisma studio --schema=./prisma/schema.prisma",
+    "db:reset": "dotenv -e ../../.env -- prisma migrate reset --schema=./prisma/schema.prisma",
+    "db:seed": "dotenv -e ../../.env -- tsx ./prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0"

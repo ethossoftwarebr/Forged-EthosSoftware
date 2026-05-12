@@ -14,20 +14,30 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { ZodBody } from '../../common/pipes/zod-validation.pipe';
 
 import {
+  Create{{className}}DtoClass,
   Create{{className}}Schema,
   type Create{{className}}Dto,
+  Update{{className}}DtoClass,
   Update{{className}}Schema,
   type Update{{className}}Dto,
+  {{className}}Entity,
+  Paginated{{className}}Response,
 } from './dto/{{resourceKebab}}.dto';
 import { type {{className}}Item, type List{{className}}Result, {{className}}sService } from './{{resourcePath}}.service';
 
 /**
- * {{className}}sController — gerado pelo Forge (prompt #9).
+ * {{className}}sController — gerado pelo Forge (prompt #9 + #11.5).
  *
  * Modelo B (D3): controller.ts é regenerado a cada `forge:gen:backend`.
  * Para customizar lógica de negócio, edite `{{resourcePath}}.service.ts` (preservado).
@@ -41,6 +51,9 @@ import { type {{className}}Item, type List{{className}}Result, {{className}}sSer
  *  - DELETE: owner, admin
  *
  * Audit em mutations (D6): @Audit em POST/PATCH/DELETE; GETs sem audit.
+ *
+ * OpenAPI (#11.5): `@ApiBody({ type: ...DtoClass })` + `@Api*Response({ type: Entity })`
+ * em cada verbo — hey-api gera tipos e zod schemas a partir disso.
  */
 @ApiTags('{{resourcePath}}')
 @Controller('{{resourcePath}}')
@@ -57,6 +70,7 @@ export class {{className}}sController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @Roles('owner', 'admin', 'manager', 'member', 'viewer')
+  @ApiOkResponse({ type: Paginated{{className}}Response })
   async list(
     @CurrentUser() session: AuthSession,
     @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
@@ -85,6 +99,7 @@ export class {{className}}sController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @Roles('owner', 'admin', 'manager', 'member', 'viewer')
+  @ApiOkResponse({ type: {{className}}Entity })
   async findOne(
     @CurrentUser() session: AuthSession,
     @Param('id') id: string,
@@ -100,6 +115,8 @@ export class {{className}}sController {
   @HttpCode(HttpStatus.CREATED)
   @Roles('owner', 'admin', 'manager')
   @Audit('{{resourceKebab}}.create')
+  @ApiBody({ type: Create{{className}}DtoClass })
+  @ApiCreatedResponse({ type: {{className}}Entity })
   async create(
     @CurrentUser() session: AuthSession,
     @ZodBody(Create{{className}}Schema) dto: Create{{className}}Dto,
@@ -115,6 +132,8 @@ export class {{className}}sController {
   @HttpCode(HttpStatus.OK)
   @Roles('owner', 'admin', 'manager')
   @Audit('{{resourceKebab}}.update')
+  @ApiBody({ type: Update{{className}}DtoClass })
+  @ApiOkResponse({ type: {{className}}Entity })
   async update(
     @CurrentUser() session: AuthSession,
     @Param('id') id: string,
@@ -131,6 +150,7 @@ export class {{className}}sController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles('owner', 'admin')
   @Audit('{{resourceKebab}}.delete')
+  @ApiNoContentResponse()
   async remove(
     @CurrentUser() session: AuthSession,
     @Param('id') id: string,

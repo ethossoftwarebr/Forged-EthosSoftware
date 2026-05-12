@@ -4,25 +4,24 @@ import { FormBuilder, Skeleton } from '@ethos/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import {
   {{findOneOptions}},
   {{findOneQueryKey}},
+  {{listQueryKey}},
   {{updateMutation}},
 } from '@/generated/api/@tanstack/react-query.gen';
+import type { {{Model}}Entity } from '@/generated/api/types.gen';
+import { {{updateBodySchema}} } from '@/generated/api/zod.gen';
 
 import { {{model}}FormFields } from '../../_components/FormFields';
-
-// V1: schema permissivo — ver create.hbs.
-const update{{Model}}Schema = z.object({}).passthrough();
 
 /**
  * Página de edição de um {{Model}} pelo id.
  *
  * Pré-popula o formulário via `useQuery` no findOne; ao submit, dispara a
- * mutation de update + invalida queries da lista e do recurso. Validação
- * via schema Zod parcial gerado pelo OpenAPI.
+ * mutation de update + invalida queries da lista (via prefix `_id`) e do
+ * recurso (queryKey exato). Schema Zod do PATCH vem do zod.gen do OpenAPI.
  *
  * Customize livremente — pra travar este arquivo contra regen, remova o
  * header AUTOGEN da primeira linha.
@@ -36,6 +35,11 @@ export default function {{Model}}EditPage() {
   const { data, isLoading } = useQuery({{findOneOptions}}({ path: { id } }));
   const update = useMutation({{updateMutation}}());
 
+  // Prefixo do queryKey de listagem — invalida qualquer paginação/busca.
+  const listKeyId = {{listQueryKey}}({
+    query: { take: 0, skip: 0, search: '' },
+  })[0]._id;
+
   if (isLoading || !data) {
     return (
       <div className="space-y-4 p-6 max-w-2xl">
@@ -44,6 +48,8 @@ export default function {{Model}}EditPage() {
       </div>
     );
   }
+
+  const item = data as {{Model}}Entity;
 
   return (
     <div className="space-y-6 p-6 max-w-2xl">
@@ -55,21 +61,15 @@ export default function {{Model}}EditPage() {
       </header>
 
       <FormBuilder
-        schema={update{{Model}}Schema}
-        fields={ {{~model~}} FormFields}
-        defaultValues={data as never}
+        schema={ {{updateBodySchema}} }
+        fields={ {{model~}} FormFields}
+        defaultValues={item}
         onSubmit={async (values) => {
           try {
-            // V1: cast body/return — OpenAPI atual sem @ApiBody/@ApiOkResponse.
-            await update.mutateAsync({ path: { id }, body: values } as never);
+            await update.mutateAsync({ path: { id }, body: values });
             await Promise.all([
               qc.invalidateQueries({ queryKey: {{findOneQueryKey}}({ path: { id } }) }),
-              qc.invalidateQueries({
-                predicate: (q) => {
-                  const k = q.queryKey?.[0];
-                  return typeof k === 'object' && k !== null && (k as { _id?: string })._id === '{{controllerBase}}List';
-                },
-              }),
+              qc.invalidateQueries({ queryKey: [{ _id: listKeyId }] }),
             ]);
             toast.success('{{Model}} atualizado.');
             router.push(`/{{slug}}/${id}`);

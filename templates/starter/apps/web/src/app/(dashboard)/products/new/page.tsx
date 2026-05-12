@@ -5,22 +5,23 @@ import { FormBuilder } from '@ethos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import { productFormFields } from '../_components/FormFields';
 
-import { productsControllerCreateMutation } from '@/generated/api/@tanstack/react-query.gen';
-
-// V1: schema permissivo — OpenAPI atual não expõe body shape (controller usa
-// @ZodBody, Swagger não captura). Quando backend gen adicionar @ApiBody no
-// template, troca por `zproductsControllerCreateBody` do zod.gen.
-const createProductSchema = z.object({}).passthrough();
+import {
+  productsControllerCreateMutation,
+  productsControllerListQueryKey,
+} from '@/generated/api/@tanstack/react-query.gen';
+import type { ProductEntity } from '@/generated/api/types.gen';
+import { zProductsControllerCreateBody } from '@/generated/api/zod.gen';
 
 /**
  * Página de criação de Product.
  *
- * Validação client = schema Zod derivado do OpenAPI (D5). Ao sucesso,
- * invalida a query da lista e redireciona pra a página de detalhes do recurso.
+ * Schema Zod e tipo do body vêm direto do OpenAPI (zod.gen + types.gen).
+ * Ao sucesso, invalida a query da lista via prefix do queryKey gerado pelo
+ * hey-api (matching por `_id` — invalida todas as paginações/buscas) e
+ * redireciona pra página de detalhes do recurso.
  *
  * Customize livremente — pra travar este arquivo contra regen, remova o
  * header AUTOGEN da primeira linha.
@@ -30,6 +31,12 @@ export default function ProductCreatePage() {
   const qc = useQueryClient();
 
   const create = useMutation(productsControllerCreateMutation());
+
+  // Extrai o `_id` do queryKey gerado pelo hey-api — usado como prefixo
+  // pra invalidar todas as queries de listagem (qualquer combinação de paginação/busca).
+  const listKeyId = productsControllerListQueryKey({
+    query: { take: 0, skip: 0, search: '' },
+  })[0]._id;
 
   return (
     <div className="max-w-2xl space-y-6 p-6">
@@ -41,28 +48,14 @@ export default function ProductCreatePage() {
       </header>
 
       <FormBuilder
-        schema={createProductSchema}
+        schema={zProductsControllerCreateBody}
         fields={productFormFields}
         onSubmit={async (values) => {
           try {
-            // V1: cast — OpenAPI atual não expõe body schema (controller usa
-            // @ZodBody, NestJS Swagger não captura). Cast pra unknown e depois
-            // pra forma esperada pelo mutation (que aceita Options<Data> — body
-            // inferido como never). Quando backend adicionar @ApiBody no template
-            // do forge-controller, troca isso pelo schema/type gerado.
-            const created = (await create.mutateAsync({ body: values } as never)) as
-              | { id?: string }
-              | undefined;
-            await qc.invalidateQueries({
-              predicate: (q) => {
-                const k = q.queryKey?.[0];
-                return (
-                  typeof k === 'object' &&
-                  k !== null &&
-                  (k as { _id?: string })._id === 'productsControllerList'
-                );
-              },
-            });
+            const created = (await create.mutateAsync({
+              body: values,
+            })) as ProductEntity | undefined;
+            await qc.invalidateQueries({ queryKey: [{ _id: listKeyId }] });
             toast.success('Product criado com sucesso.');
             router.push(created?.id ? `/products/${created.id}` : '/products');
           } catch (err) {

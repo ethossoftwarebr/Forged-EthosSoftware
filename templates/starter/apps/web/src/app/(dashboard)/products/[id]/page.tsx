@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { productsControllerFindOneOptions } from '@/generated/api/@tanstack/react-query.gen';
+import type { ProductEntity } from '@/generated/api/types.gen';
 
 /**
  * Página de detalhes (read-only) de um Product pelo id.
@@ -19,14 +20,7 @@ export default function ProductViewPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 
-  const {
-    data: raw,
-    isLoading,
-    error,
-  } = useQuery(productsControllerFindOneOptions({ path: { id } }));
-  // V1: cast — OpenAPI atual não expõe shape do recurso (sem @ApiOkResponse
-  // no controller gen). Quando backend adicionar, troca por tipo gerado.
-  const data = (raw ?? null) as Record<string, unknown> | null;
+  const { data, isLoading, error } = useQuery(productsControllerFindOneOptions({ path: { id } }));
 
   if (isLoading) {
     return (
@@ -50,11 +44,13 @@ export default function ProductViewPage() {
     );
   }
 
+  const item = data as ProductEntity;
+
   return (
     <div className="max-w-2xl space-y-6 p-6">
       <header className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{String(data.name)}</h1>
+          <h1 className="text-2xl font-semibold">{String(item.name)}</h1>
           <p className="text-muted-foreground text-sm">Detalhes do Product.</p>
         </div>
         <Button asChild variant="outline">
@@ -72,19 +68,19 @@ export default function ProductViewPage() {
           <dl className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
             <div>
               <dt className="text-muted-foreground font-medium">Name</dt>
-              <dd className="mt-1">{data.name != null ? String(data.name) : '—'}</dd>
+              <dd className="mt-1">{item.name != null ? String(item.name) : '—'} </dd>
             </div>
             <div>
               <dt className="text-muted-foreground font-medium">Sku</dt>
-              <dd className="mt-1">{data.sku != null ? String(data.sku) : '—'}</dd>
+              <dd className="mt-1">{item.sku != null ? String(item.sku) : '—'} </dd>
             </div>
             <div>
               <dt className="text-muted-foreground font-medium">Price</dt>
-              <dd className="mt-1">{data.price != null ? String(data.price) : '—'}</dd>
+              <dd className="mt-1">{item.price != null ? String(item.price) : '—'} </dd>
             </div>
             <div>
               <dt className="text-muted-foreground font-medium">Description</dt>
-              <dd className="mt-1">{data.description != null ? String(data.description) : '—'}</dd>
+              <dd className="mt-1">{item.description != null ? String(item.description) : '—'} </dd>
             </div>
           </dl>
         </CardContent>

@@ -105,8 +105,116 @@ ${pc.bold('Marker:')}
   );
 }
 
+// Campos do modelo que NUNCA entram em Create/Update DTOs (são gerenciados pelo backend):
+//   id           → cuid() gerado pelo Prisma
+//   tenantId     → vem do JWT (D7), NUNCA do body
+//   createdAt    → @default(now())
+//   updatedAt    → @updatedAt
+const SYSTEM_FIELDS = new Set(['id', 'tenantId', 'createdAt', 'updatedAt']);
+
+/**
+ * Mapeia tipo Prisma → ({ oapiType, oapiFormat }) usado em @ApiProperty.
+ * Mantém alinhamento com OpenAPI 3.0 (números via "number" + format "double"/"decimal").
+ */
+function mapPrismaToOpenApi(prismaType) {
+  switch (prismaType) {
+    case 'String':
+      return { oapiType: 'String' };
+    case 'Boolean':
+      return { oapiType: 'Boolean' };
+    case 'Int':
+    case 'BigInt':
+      return { oapiType: 'Number' };
+    case 'Float':
+    case 'Decimal':
+      return { oapiType: 'Number' };
+    case 'DateTime':
+      return { oapiType: 'Date' };
+    case 'Json':
+      return { oapiType: 'Object' };
+    case 'Bytes':
+      return { oapiType: 'String' };
+    default:
+      // Enums e tipos desconhecidos caem em String (D7 — dev customiza no DTO se precisar)
+      return { oapiType: 'String' };
+  }
+}
+
+/**
+ * Mapeia tipo Prisma → builder de zod (para o Create schema).
+ * Mantém alinhamento com D7 strict (.strict()) e coerce em number/date.
+ */
+function mapPrismaToZod(prismaType, isOptional) {
+  let zod;
+  switch (prismaType) {
+    case 'String':
+      // Required strings ganham .min(1) (rejeita "") — optional sem (string vazia válida).
+      zod = isOptional ? `z.string()` : `z.string().min(1, '{{name}} é obrigatório')`;
+      break;
+    case 'Boolean':
+      zod = `z.coerce.boolean()`;
+      break;
+    case 'Int':
+    case 'BigInt':
+      zod = `z.coerce.number().int()`;
+      break;
+    case 'Float':
+    case 'Decimal':
+      zod = `z.coerce.number()`;
+      break;
+    case 'DateTime':
+      zod = `z.coerce.date()`;
+      break;
+    case 'Json':
+      zod = `z.unknown()`;
+      break;
+    case 'Bytes':
+      zod = `z.string()`;
+      break;
+    default:
+      zod = `z.string()`;
+  }
+  return isOptional ? `${zod}.optional()` : zod;
+}
+
 function buildContext(model) {
   const name = model.name;
+
+  // Todos os scalars (sem relations) — usados na Entity (response shape)
+  const scalarFields = model.fields.filter((f) => !f.relationName && f.kind !== 'object');
+
+  // Fields editáveis pelo client (Create/Update DTO) — remove id/tenantId/timestamps
+  const createFields = scalarFields
+    .filter((f) => !SYSTEM_FIELDS.has(f.name))
+    .map((f) => {
+      const { oapiType } = mapPrismaToOpenApi(f.type);
+      const isOptional = !f.isRequired;
+      return {
+        name: f.name,
+        prismaType: f.type,
+        oapiType,
+        tsType: oapiType === 'Date' ? 'Date' : oapiType.toLowerCase(), // string|number|boolean|Date|object
+        required: f.isRequired,
+        optional: isOptional,
+        zodLine: mapPrismaToZod(f.type, isOptional).replace('{{name}}', f.name),
+      };
+    });
+
+  // Fields da entity (response) — inclui id/timestamps mas exclui tenantId (não vaza fora do JWT)
+  const entityFields = scalarFields
+    .filter((f) => f.name !== 'tenantId')
+    .map((f) => {
+      const { oapiType } = mapPrismaToOpenApi(f.type);
+      return {
+        name: f.name,
+        prismaType: f.type,
+        oapiType,
+        tsType: oapiType === 'Date' ? 'Date' : oapiType.toLowerCase(),
+        required: f.isRequired,
+        optional: !f.isRequired,
+      };
+    });
+
   return {
     modelName: name, // Product
     className: name, // Product
@@ -114,7 +222,9 @@ function buildContext(model) {
     resourcePath: resourcePath(name), // products
     resourceKebab: toKebabCase(name), // product
     pluralKebab: pluralize(toKebabCase(name)), // products
-    fields: model.fields.filter((f) => !f.relationName), // sem relations no DTO base
+    fields: scalarFields, // legado (templates que ainda usam)
+    createFields, // novos (DTO Create/Update + Zod)
+    entityFields, // novos (Entity response)
   };
 }
 

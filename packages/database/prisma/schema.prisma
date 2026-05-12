@@ -42,6 +42,10 @@ generator nestjsCrud {
 
 datasource db {
   provider = "postgresql"
+  // DATABASE_URL é carregada pela raiz do monorepo (.env) via dotenv-cli.
+  // Scripts em packages/database/package.json fazem `dotenv -e ../../.env -- prisma <cmd>`.
+  // NÃO criar `.env` aqui — drift garantido. Single source: <root>/.env (gitignored).
+  // Ver Wave 5 do spec 2026-05-11-ethos-gen-hardening.
   url      = env("DATABASE_URL")
 }
 

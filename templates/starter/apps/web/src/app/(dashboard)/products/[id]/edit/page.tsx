@@ -5,25 +5,24 @@ import { FormBuilder, Skeleton } from '@ethos/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import { productFormFields } from '../../_components/FormFields';
 
 import {
   productsControllerFindOneOptions,
   productsControllerFindOneQueryKey,
+  productsControllerListQueryKey,
   productsControllerUpdateMutation,
 } from '@/generated/api/@tanstack/react-query.gen';
-
-// V1: schema permissivo — ver create.hbs.
-const updateProductSchema = z.object({}).passthrough();
+import type { ProductEntity } from '@/generated/api/types.gen';
+import { zProductsControllerUpdateBody } from '@/generated/api/zod.gen';
 
 /**
  * Página de edição de um Product pelo id.
  *
  * Pré-popula o formulário via `useQuery` no findOne; ao submit, dispara a
- * mutation de update + invalida queries da lista e do recurso. Validação
- * via schema Zod parcial gerado pelo OpenAPI.
+ * mutation de update + invalida queries da lista (via prefix `_id`) e do
+ * recurso (queryKey exato). Schema Zod do PATCH vem do zod.gen do OpenAPI.
  *
  * Customize livremente — pra travar este arquivo contra regen, remova o
  * header AUTOGEN da primeira linha.
@@ -37,6 +36,11 @@ export default function ProductEditPage() {
   const { data, isLoading } = useQuery(productsControllerFindOneOptions({ path: { id } }));
   const update = useMutation(productsControllerUpdateMutation());
 
+  // Prefixo do queryKey de listagem — invalida qualquer paginação/busca.
+  const listKeyId = productsControllerListQueryKey({
+    query: { take: 0, skip: 0, search: '' },
+  })[0]._id;
+
   if (isLoading || !data) {
     return (
       <div className="max-w-2xl space-y-4 p-6">
@@ -45,6 +49,8 @@ export default function ProductEditPage() {
       </div>
     );
   }
+
+  const item = data as ProductEntity;
 
   return (
     <div className="max-w-2xl space-y-6 p-6">
@@ -56,27 +62,17 @@ export default function ProductEditPage() {
       </header>
 
       <FormBuilder
-        schema={updateProductSchema}
+        schema={zProductsControllerUpdateBody}
         fields={productFormFields}
-        defaultValues={data as never}
+        defaultValues={item}
         onSubmit={async (values) => {
           try {
-            // V1: cast body/return — OpenAPI atual sem @ApiBody/@ApiOkResponse.
-            await update.mutateAsync({ path: { id }, body: values } as never);
+            await update.mutateAsync({ path: { id }, body: values });
             await Promise.all([
               qc.invalidateQueries({
                 queryKey: productsControllerFindOneQueryKey({ path: { id } }),
               }),
-              qc.invalidateQueries({
-                predicate: (q) => {
-                  const k = q.queryKey?.[0];
-                  return (
-                    typeof k === 'object' &&
-                    k !== null &&
-                    (k as { _id?: string })._id === 'productsControllerList'
-                  );
-                },
-              }),
+              qc.invalidateQueries({ queryKey: [{ _id: listKeyId }] }),
             ]);
             toast.success('Product atualizado.');
             router.push(`/products/${id}`);
