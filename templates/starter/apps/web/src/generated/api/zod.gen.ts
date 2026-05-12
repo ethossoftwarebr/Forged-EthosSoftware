@@ -2,6 +2,37 @@
 
 import * as z from 'zod';
 
+export const zProductEntity = z.object({
+    id: z.string(),
+    name: z.string(),
+    sku: z.string(),
+    price: z.number(),
+    description: z.string().optional(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime()
+});
+
+export const zPaginatedProductResponse = z.object({
+    items: z.array(zProductEntity),
+    total: z.number(),
+    take: z.number(),
+    skip: z.number()
+});
+
+export const zCreateProductDtoClass = z.object({
+    name: z.string(),
+    sku: z.string(),
+    price: z.number(),
+    description: z.string().optional()
+});
+
+export const zUpdateProductDtoClass = z.object({
+    name: z.string().optional(),
+    sku: z.string().optional(),
+    price: z.number().optional(),
+    description: z.string().optional()
+});
+
 /**
  * The Health Check is successful
  */
@@ -24,6 +55,12 @@ export const zProductsControllerListQuery = z.object({
     search: z.string()
 });
 
+export const zProductsControllerListResponse = zPaginatedProductResponse;
+
+export const zProductsControllerCreateBody = zCreateProductDtoClass;
+
+export const zProductsControllerCreateResponse = zProductEntity;
+
 export const zProductsControllerRemovePath = z.object({
     id: z.string()
 });
@@ -34,9 +71,15 @@ export const zProductsControllerFindOnePath = z.object({
     id: z.string()
 });
 
+export const zProductsControllerFindOneResponse = zProductEntity;
+
+export const zProductsControllerUpdateBody = zUpdateProductDtoClass;
+
 export const zProductsControllerUpdatePath = z.object({
     id: z.string()
 });
+
+export const zProductsControllerUpdateResponse = zProductEntity;
 
 export const zTenantsControllerListMembersQuery = z.object({
     take: z.number(),

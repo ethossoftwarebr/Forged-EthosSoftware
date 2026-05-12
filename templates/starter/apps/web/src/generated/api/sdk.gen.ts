@@ -36,15 +36,39 @@ export const authControllerLogout = <ThrowOnError extends boolean = false>(optio
 
 export const authControllerMe = <ThrowOnError extends boolean = false>(options?: Options<AuthControllerMeData, ThrowOnError>) => (options?.client ?? client).get<AuthControllerMeResponses, unknown, ThrowOnError>({ url: '/auth/me', ...options });
 
-export const productsControllerList = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerListData, ThrowOnError>) => (options.client ?? client).get<ProductsControllerListResponses, unknown, ThrowOnError>({ url: '/products', ...options });
+export const productsControllerList = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerListData, ThrowOnError>) => (options.client ?? client).get<ProductsControllerListResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/products',
+    ...options
+});
 
-export const productsControllerCreate = <ThrowOnError extends boolean = false>(options?: Options<ProductsControllerCreateData, ThrowOnError>) => (options?.client ?? client).post<ProductsControllerCreateResponses, unknown, ThrowOnError>({ url: '/products', ...options });
+export const productsControllerCreate = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerCreateData, ThrowOnError>) => (options.client ?? client).post<ProductsControllerCreateResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/products',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const productsControllerRemove = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerRemoveData, ThrowOnError>) => (options.client ?? client).delete<ProductsControllerRemoveResponses, unknown, ThrowOnError>({ url: '/products/{id}', ...options });
 
-export const productsControllerFindOne = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerFindOneData, ThrowOnError>) => (options.client ?? client).get<ProductsControllerFindOneResponses, unknown, ThrowOnError>({ url: '/products/{id}', ...options });
+export const productsControllerFindOne = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerFindOneData, ThrowOnError>) => (options.client ?? client).get<ProductsControllerFindOneResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/products/{id}',
+    ...options
+});
 
-export const productsControllerUpdate = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerUpdateData, ThrowOnError>) => (options.client ?? client).patch<ProductsControllerUpdateResponses, unknown, ThrowOnError>({ url: '/products/{id}', ...options });
+export const productsControllerUpdate = <ThrowOnError extends boolean = false>(options: Options<ProductsControllerUpdateData, ThrowOnError>) => (options.client ?? client).patch<ProductsControllerUpdateResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/products/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const tenantsControllerGetMe = <ThrowOnError extends boolean = false>(options?: Options<TenantsControllerGetMeData, ThrowOnError>) => (options?.client ?? client).get<TenantsControllerGetMeResponses, unknown, ThrowOnError>({ url: '/tenants/me', ...options });
 

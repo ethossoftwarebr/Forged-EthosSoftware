@@ -4,6 +4,43 @@ export type ClientOptions = {
     baseURL: string;
 };
 
+export type ProductEntity = {
+    id: string;
+    name: string;
+    sku: string;
+    price: number;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type PaginatedProductResponse = {
+    /**
+     * Items da página
+     */
+    items: Array<ProductEntity>;
+    /**
+     * Total de itens (sem paginação)
+     */
+    total: number;
+    take: number;
+    skip: number;
+};
+
+export type CreateProductDtoClass = {
+    name: string;
+    sku: string;
+    price: number;
+    description?: string;
+};
+
+export type UpdateProductDtoClass = {
+    name?: string;
+    sku?: string;
+    price?: number;
+    description?: string;
+};
+
 export type AppControllerGetInfoData = {
     body?: never;
     path?: never;
@@ -147,19 +184,23 @@ export type ProductsControllerListData = {
 };
 
 export type ProductsControllerListResponses = {
-    200: unknown;
+    200: PaginatedProductResponse;
 };
 
+export type ProductsControllerListResponse = ProductsControllerListResponses[keyof ProductsControllerListResponses];
+
 export type ProductsControllerCreateData = {
-    body?: never;
+    body: CreateProductDtoClass;
     path?: never;
     query?: never;
     url: '/products';
 };
 
 export type ProductsControllerCreateResponses = {
-    201: unknown;
+    201: ProductEntity;
 };
+
+export type ProductsControllerCreateResponse = ProductsControllerCreateResponses[keyof ProductsControllerCreateResponses];
 
 export type ProductsControllerRemoveData = {
     body?: never;
@@ -186,11 +227,13 @@ export type ProductsControllerFindOneData = {
 };
 
 export type ProductsControllerFindOneResponses = {
-    200: unknown;
+    200: ProductEntity;
 };
 
+export type ProductsControllerFindOneResponse = ProductsControllerFindOneResponses[keyof ProductsControllerFindOneResponses];
+
 export type ProductsControllerUpdateData = {
-    body?: never;
+    body: UpdateProductDtoClass;
     path: {
         id: string;
     };
@@ -199,8 +242,10 @@ export type ProductsControllerUpdateData = {
 };
 
 export type ProductsControllerUpdateResponses = {
-    200: unknown;
+    200: ProductEntity;
 };
+
+export type ProductsControllerUpdateResponse = ProductsControllerUpdateResponses[keyof ProductsControllerUpdateResponses];
 
 export type TenantsControllerGetMeData = {
     body?: never;

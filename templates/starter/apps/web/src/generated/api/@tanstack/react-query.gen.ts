@@ -5,7 +5,7 @@ import type { AxiosError } from 'axios';
 
 import { client } from '../client.gen';
 import { appControllerGetInfo, authControllerLogin, authControllerLogout, authControllerMe, authControllerRefresh, authControllerRegister, healthControllerCheck, type Options, productsControllerCreate, productsControllerFindOne, productsControllerList, productsControllerRemove, productsControllerUpdate, tenantsControllerGetMe, tenantsControllerInvite, tenantsControllerListMembers, tenantsControllerRemoveMember, tenantsControllerUpdateMe, usersControllerFindOne, usersControllerList, usersControllerMe, usersControllerUpdateMe } from '../sdk.gen';
-import type { AppControllerGetInfoData, AuthControllerLoginData, AuthControllerLogoutData, AuthControllerMeData, AuthControllerRefreshData, AuthControllerRegisterData, HealthControllerCheckData, HealthControllerCheckError, HealthControllerCheckResponse, ProductsControllerCreateData, ProductsControllerFindOneData, ProductsControllerListData, ProductsControllerRemoveData, ProductsControllerRemoveResponse, ProductsControllerUpdateData, TenantsControllerGetMeData, TenantsControllerInviteData, TenantsControllerListMembersData, TenantsControllerRemoveMemberData, TenantsControllerUpdateMeData, UsersControllerFindOneData, UsersControllerListData, UsersControllerMeData, UsersControllerUpdateMeData } from '../types.gen';
+import type { AppControllerGetInfoData, AuthControllerLoginData, AuthControllerLogoutData, AuthControllerMeData, AuthControllerRefreshData, AuthControllerRegisterData, HealthControllerCheckData, HealthControllerCheckError, HealthControllerCheckResponse, ProductsControllerCreateData, ProductsControllerCreateResponse, ProductsControllerFindOneData, ProductsControllerFindOneResponse, ProductsControllerListData, ProductsControllerListResponse, ProductsControllerRemoveData, ProductsControllerRemoveResponse, ProductsControllerUpdateData, ProductsControllerUpdateResponse, TenantsControllerGetMeData, TenantsControllerInviteData, TenantsControllerListMembersData, TenantsControllerRemoveMemberData, TenantsControllerUpdateMeData, UsersControllerFindOneData, UsersControllerListData, UsersControllerMeData, UsersControllerUpdateMeData } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseURL' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -143,7 +143,7 @@ export const authControllerMeOptions = (options?: Options<AuthControllerMeData>)
 
 export const productsControllerListQueryKey = (options: Options<ProductsControllerListData>) => createQueryKey('productsControllerList', options);
 
-export const productsControllerListOptions = (options: Options<ProductsControllerListData>) => queryOptions<unknown, AxiosError<DefaultError>, unknown, ReturnType<typeof productsControllerListQueryKey>>({
+export const productsControllerListOptions = (options: Options<ProductsControllerListData>) => queryOptions<ProductsControllerListResponse, AxiosError<DefaultError>, ProductsControllerListResponse, ReturnType<typeof productsControllerListQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
         const { data } = await productsControllerList({
             ...options,
@@ -156,8 +156,8 @@ export const productsControllerListOptions = (options: Options<ProductsControlle
     queryKey: productsControllerListQueryKey(options)
 });
 
-export const productsControllerCreateMutation = (options?: Partial<Options<ProductsControllerCreateData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<ProductsControllerCreateData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<ProductsControllerCreateData>> = {
+export const productsControllerCreateMutation = (options?: Partial<Options<ProductsControllerCreateData>>): UseMutationOptions<ProductsControllerCreateResponse, AxiosError<DefaultError>, Options<ProductsControllerCreateData>> => {
+    const mutationOptions: UseMutationOptions<ProductsControllerCreateResponse, AxiosError<DefaultError>, Options<ProductsControllerCreateData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await productsControllerCreate({
                 ...options,
@@ -186,7 +186,7 @@ export const productsControllerRemoveMutation = (options?: Partial<Options<Produ
 
 export const productsControllerFindOneQueryKey = (options: Options<ProductsControllerFindOneData>) => createQueryKey('productsControllerFindOne', options);
 
-export const productsControllerFindOneOptions = (options: Options<ProductsControllerFindOneData>) => queryOptions<unknown, AxiosError<DefaultError>, unknown, ReturnType<typeof productsControllerFindOneQueryKey>>({
+export const productsControllerFindOneOptions = (options: Options<ProductsControllerFindOneData>) => queryOptions<ProductsControllerFindOneResponse, AxiosError<DefaultError>, ProductsControllerFindOneResponse, ReturnType<typeof productsControllerFindOneQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
         const { data } = await productsControllerFindOne({
             ...options,
@@ -199,8 +199,8 @@ export const productsControllerFindOneOptions = (options: Options<ProductsContro
     queryKey: productsControllerFindOneQueryKey(options)
 });
 
-export const productsControllerUpdateMutation = (options?: Partial<Options<ProductsControllerUpdateData>>): UseMutationOptions<unknown, AxiosError<DefaultError>, Options<ProductsControllerUpdateData>> => {
-    const mutationOptions: UseMutationOptions<unknown, AxiosError<DefaultError>, Options<ProductsControllerUpdateData>> = {
+export const productsControllerUpdateMutation = (options?: Partial<Options<ProductsControllerUpdateData>>): UseMutationOptions<ProductsControllerUpdateResponse, AxiosError<DefaultError>, Options<ProductsControllerUpdateData>> => {
+    const mutationOptions: UseMutationOptions<ProductsControllerUpdateResponse, AxiosError<DefaultError>, Options<ProductsControllerUpdateData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await productsControllerUpdate({
                 ...options,

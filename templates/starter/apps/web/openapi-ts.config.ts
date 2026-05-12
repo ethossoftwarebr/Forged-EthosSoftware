@@ -29,7 +29,7 @@ export default defineConfig({
   plugins: [
     {
       name: '@hey-api/client-axios',
-      runtimeConfigPath: './src/hey-api.ts',
+      runtimeConfigPath: './src/hey-api',
     },
     '@tanstack/react-query',
     'zod',
