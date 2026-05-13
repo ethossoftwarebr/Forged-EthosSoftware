@@ -189,6 +189,90 @@ Quando dúvida: rode `pnpm forge:gen:backend && pnpm forge:gen:frontend` num bra
 
 ---
 
+## AI Chat (@ethos/ai-chat)
+
+Pacote plugável de chat com Anthropic Claude. **Não está habilitado por padrão no starter** — opt-in. Schema-ready: `ChatConversation` + `ChatMessage` já existem em `@ethos/database`, basta ligar os módulos e configurar a `ANTHROPIC_API_KEY`.
+
+### Habilitar no API
+
+Em `apps/api/src/app.module.ts`, adicione:
+
+```ts
+import { AiChatModule, createSearchProductsTool } from '@ethos/ai-chat/server';
+import { PrismaService } from '@ethos/api-base';
+
+@Module({
+  imports: [
+    // ...outros modules
+    AiChatModule.forRoot({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      defaultModel: 'claude-sonnet-4-5',
+      fallbackModel: 'claude-haiku-4-5',
+      tools: [createSearchProductsTool(prismaClient)], // opcional
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Endpoints expostos automaticamente:
+
+- `POST /ai-chat` — chat síncrono (resposta JSON completa, tools loop interno).
+- `POST /ai-chat/stream` — SSE streaming (deltas + tool events).
+
+Ambos passam por `JwtAuthGuard` + `MultiTenantInterceptor` — só usuário autenticado e dentro do tenant atual.
+
+### Habilitar no Web
+
+Em `apps/web/src/app/layout.tsx` (ou onde fizer sentido na sua UX):
+
+```tsx
+'use client';
+import { ChatWidget } from '@ethos/ai-chat/client';
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <ChatWidget apiBaseUrl="/api" />
+    </>
+  );
+}
+```
+
+Alternativas: `ChatInline` (embedado em página) ou `useAiChat` (hook headless).
+
+### Env
+
+```bash
+# .env do API (server-only)
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### Adicionar tool custom
+
+```ts
+import { z } from 'zod';
+import type { ToolDef } from '@ethos/ai-chat/shared';
+
+export function createMyTool(): ToolDef<{ q: string }, { hits: number }> {
+  return {
+    name: 'my_tool',
+    description: 'Descrição clara — Claude usa pra decidir quando chamar.',
+    inputSchema: z.object({ q: z.string() }),
+    handler: async ({ q }) => ({ hits: q.length }),
+  };
+}
+
+// passar em AiChatModule.forRoot({ tools: [createMyTool(), ...] })
+```
+
+### Detalhes adicionais
+
+Ver `packages/ai-chat/README.md` no monorepo Forge para: streaming, multi-tenant guards, history replay, limitações V1 (forFeature last-write-wins, registerTool runtime throw, etc.).
+
+---
+
 ## Próximos passos
 
 - Leia [`docs/05-GERADORES-BACKEND.md`](../../../docs/05-GERADORES-BACKEND.md) e [`docs/06-GERADORES-FRONTEND.md`](../../../docs/06-GERADORES-FRONTEND.md) do Forge pra entender os geradores em profundidade.

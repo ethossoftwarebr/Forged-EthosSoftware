@@ -67,11 +67,12 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members       TenantMember[]
-  refreshTokens RefreshToken[]
-  sessions      Session[]
-  auditLogs     AuditLog[]
-  magicLinks    MagicLinkToken[]
+  members           TenantMember[]
+  refreshTokens     RefreshToken[]
+  sessions          Session[]
+  auditLogs         AuditLog[]
+  magicLinks        MagicLinkToken[]
+  chatConversations ChatConversation[]
 }
 
 // ============================================================================
@@ -98,12 +99,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members        TenantMember[]
-  oauthAccounts  OAuthAccount[]
-  refreshTokens  RefreshToken[]
-  sessions       Session[]
-  auditLogs      AuditLog[]
-  mfaBackupCodes MfaBackupCode[]
+  members           TenantMember[]
+  oauthAccounts     OAuthAccount[]
+  refreshTokens     RefreshToken[]
+  sessions          Session[]
+  auditLogs         AuditLog[]
+  mfaBackupCodes    MfaBackupCode[]
+  chatConversations ChatConversation[]
 }
 
 // ============================================================================
@@ -286,4 +288,45 @@ model Product {
 
   @@unique([tenantId, sku])
   @@index([tenantId])
+}
+
+// ============================================================================
+// Chat — @ethos/ai-chat (prompt #13). Sem /// @forge.generate (D#13.6 — interno do package).
+// ============================================================================
+
+enum ChatRole {
+  user
+  assistant
+  system
+  tool
+}
+
+model ChatConversation {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([tenantId, userId])
+  @@index([tenantId, createdAt])
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           ChatRole
+  content        String   @db.Text
+  toolCalls      Json? // array de tool_use blocks quando role=assistant
+  toolCallId     String? // referência ao tool_use_id quando role=tool
+  createdAt      DateTime @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
