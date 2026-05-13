@@ -3,7 +3,7 @@ import { type Prisma, type PrismaClient } from '@ethos/database';
 import { Inject, Injectable } from '@nestjs/common';
 
 /**
- * {{className}}sRepository — gerado pelo Forge (prompt #9).
+ * {{plural className}}Repository — gerado pelo Forge (prompt #9).
  *
  * Wrapper sobre `prisma.{{varName}}` com filtro automático por `tenantId`.
  * Regenerado a cada `forge:gen:backend` — NÃO customizar aqui.
@@ -14,7 +14,7 @@ import { Inject, Injectable } from '@nestjs/common';
  * Isso garante 0 linhas afetadas em cross-tenant attempts (sem 500/leak).
  */
 @Injectable()
-export class {{className}}sRepository {
+export class {{plural className}}Repository {
   constructor(@Inject(PRISMA_CLIENT_TOKEN) private readonly prisma: PrismaClient) {}
 
   findMany(

@@ -3,6 +3,8 @@
 // Product → products (resource), Product (className), product (varName)
 // OrderItem → order-items (resource), OrderItem (className), orderItem (varName)
 
+import _pluralize from 'pluralize';
+
 export function toKebabCase(str) {
   return str
     .replace(/([a-z])([A-Z])/g, '$1-$2')
@@ -19,12 +21,9 @@ export function toCamelCase(str) {
 }
 
 export function pluralize(str) {
-  // Pluralização simples — cobre casos comuns. Inglês only por enquanto.
-  // CONCERN W2: pluralizer "burro". Para irregulares (man → men, mouse → mice),
-  // aceitar override via /// @forge.plural() no model (futuro V2).
-  if (/[^aeiou]y$/i.test(str)) return str.slice(0, -1) + 'ies';
-  if (/(s|x|z|ch|sh)$/i.test(str)) return str + 'es';
-  return str + 's';
+  // Pluralização via lib `pluralize` — cobre irregulares (person→people, mouse→mice, goose→geese)
+  // e preserva case. Para PT-BR ou overrides custom, aceitar via /// @forge.plural() no model (futuro V2).
+  return _pluralize(str);
 }
 
 export function resourcePath(modelName) {
@@ -32,10 +31,9 @@ export function resourcePath(modelName) {
   return pluralize(toKebabCase(modelName));
 }
 
-/** PascalCase plural — Product → Products | Category → Categories */
+/** PascalCase plural — Product → Products | Category → Categories | Person → People */
 export function pluralPascal(modelName) {
-  // Pluraliza preservando PascalCase: aplica a mesma heurística direto no PascalCase.
-  if (/[^aeiouAEIOU]y$/.test(modelName)) return modelName.slice(0, -1) + 'ies';
-  if (/(s|x|z|ch|sh)$/i.test(modelName)) return modelName + 'es';
-  return modelName + 's';
+  // A lib `pluralize` preserva o case do input (PascalCase entra, PascalCase sai).
+  // Delega pra `pluralize()` local pra herdar futuros overrides (ex: @forge.plural).
+  return pluralize(modelName);
 }

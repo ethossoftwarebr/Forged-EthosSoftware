@@ -2,10 +2,10 @@ import { type {{className}} } from '@ethos/database';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { type Create{{className}}Dto, type Update{{className}}Dto } from './dto/{{resourceKebab}}.dto';
-import { {{className}}sRepository } from './{{resourcePath}}.repository';
+import { {{plural className}}Repository } from './{{resourcePath}}.repository';
 
 /**
- * {{className}}sService — gerado pelo Forge (prompt #9).
+ * {{plural className}}Service — gerado pelo Forge (prompt #9).
  *
  * Modelo B (D3): este arquivo é o PONTO DE EXTENSÃO do dev.
  * `forge:gen:backend` NUNCA sobrescreve este arquivo — customize livremente.
@@ -30,8 +30,8 @@ export interface List{{className}}Result {
 }
 
 @Injectable()
-export class {{className}}sService {
-  constructor(private readonly {{varName}}sRepository: {{className}}sRepository) {}
+export class {{plural className}}Service {
+  constructor(private readonly {{plural varName}}Repository: {{plural className}}Repository) {}
 
   async list(tenantId: string, opts: List{{className}}Options): Promise<List{{className}}Result> {
     const { take, skip, search } = opts;
@@ -40,20 +40,20 @@ export class {{className}}sService {
       : {};
 
     const [items, total] = await Promise.all([
-      this.{{varName}}sRepository.findMany(tenantId, {
+      this.{{plural varName}}Repository.findMany(tenantId, {
         where,
         orderBy: { createdAt: 'desc' },
         take,
         skip,
       }),
-      this.{{varName}}sRepository.count(tenantId, where),
+      this.{{plural varName}}Repository.count(tenantId, where),
     ]);
 
     return { items, total, take, skip };
   }
 
   async findOne(tenantId: string, id: string): Promise<{{className}}Item> {
-    const item = await this.{{varName}}sRepository.findFirst(tenantId, id);
+    const item = await this.{{plural varName}}Repository.findFirst(tenantId, id);
     if (!item) {
       throw new NotFoundException({
         code: '{{className}}_NOT_FOUND'.toUpperCase(),
@@ -67,11 +67,11 @@ export class {{className}}sService {
     // dto vem validado pelo Zod (strict). Cast pra Prisma input — campos extras
     // já foram filtrados pelo schema. Se houver fields com tipos especiais
     // (Decimal, Json), customize aqui na hora de criar.
-    return this.{{varName}}sRepository.create(tenantId, dto as never);
+    return this.{{plural varName}}Repository.create(tenantId, dto as never);
   }
 
   async update(tenantId: string, id: string, dto: Update{{className}}Dto): Promise<{{className}}Item> {
-    const updated = await this.{{varName}}sRepository.update(tenantId, id, dto as never);
+    const updated = await this.{{plural varName}}Repository.update(tenantId, id, dto as never);
     if (!updated) {
       throw new NotFoundException({
         code: '{{className}}_NOT_FOUND'.toUpperCase(),
@@ -82,7 +82,7 @@ export class {{className}}sService {
   }
 
   async remove(tenantId: string, id: string): Promise<void> {
-    const removed = await this.{{varName}}sRepository.delete(tenantId, id);
+    const removed = await this.{{plural varName}}Repository.delete(tenantId, id);
     if (!removed) {
       throw new NotFoundException({
         code: '{{className}}_NOT_FOUND'.toUpperCase(),

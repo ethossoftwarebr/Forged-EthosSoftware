@@ -2,6 +2,8 @@
 // Product → products (resource), Product (className), product (varName)
 // OrderItem → order-items (resource), OrderItem (className), orderItem (varName)
 
+import _pluralize from 'pluralize';
+
 export function toKebabCase(str) {
   return str
     .replace(/([a-z])([A-Z])/g, '$1-$2')
@@ -18,11 +20,9 @@ export function toCamelCase(str) {
 }
 
 export function pluralize(str) {
-  // Pluralização simples — cobre casos comuns. Inglês only por enquanto.
-  // Para irregulares (man → men, mouse → mice), aceitar override via /// @forge.plural() no model (futuro V2).
-  if (/[^aeiou]y$/i.test(str)) return str.slice(0, -1) + 'ies';
-  if (/(s|x|z|ch|sh)$/i.test(str)) return str + 'es';
-  return str + 's';
+  // Pluralização via lib `pluralize` — cobre irregulares (person→people, mouse→mice, goose→geese)
+  // e preserva case. Para PT-BR ou overrides custom, aceitar via /// @forge.plural() no model (futuro V2).
+  return _pluralize(str);
 }
 
 export function resourcePath(modelName) {

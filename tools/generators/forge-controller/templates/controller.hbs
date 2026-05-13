@@ -34,10 +34,10 @@ import {
   {{className}}Entity,
   Paginated{{className}}Response,
 } from './dto/{{resourceKebab}}.dto';
-import { type {{className}}Item, type List{{className}}Result, {{className}}sService } from './{{resourcePath}}.service';
+import { type {{className}}Item, type List{{className}}Result, {{plural className}}Service } from './{{resourcePath}}.service';
 
 /**
- * {{className}}sController — gerado pelo Forge (prompt #9 + #11.5).
+ * {{plural className}}Controller — gerado pelo Forge (prompt #9 + #11.5).
  *
  * Modelo B (D3): controller.ts é regenerado a cada `forge:gen:backend`.
  * Para customizar lógica de negócio, edite `{{resourcePath}}.service.ts` (preservado).
@@ -57,11 +57,11 @@ import { type {{className}}Item, type List{{className}}Result, {{className}}sSer
  */
 @ApiTags('{{resourcePath}}')
 @Controller('{{resourcePath}}')
-export class {{className}}sController {
+export class {{plural className}}Controller {
   private readonly MAX_TAKE = 100;
   private readonly MAX_SKIP = 100_000;
 
-  constructor(private readonly {{varName}}sService: {{className}}sService) {}
+  constructor(private readonly {{plural varName}}Service: {{plural className}}Service) {}
 
   // ==========================================================================
   // GET /{{resourcePath}} — listing (todos autenticados — D5)
@@ -89,7 +89,7 @@ export class {{className}}sController {
         message: `skip deve estar entre 0 e ${this.MAX_SKIP}.`,
       });
     }
-    return this.{{varName}}sService.list(session.tenantId, { take, skip, ...(search ? { search } : {}) });
+    return this.{{plural varName}}Service.list(session.tenantId, { take, skip, ...(search ? { search } : {}) });
   }
 
   // ==========================================================================
@@ -104,7 +104,7 @@ export class {{className}}sController {
     @CurrentUser() session: AuthSession,
     @Param('id') id: string,
   ): Promise<{{className}}Item> {
-    return this.{{varName}}sService.findOne(session.tenantId, id);
+    return this.{{plural varName}}Service.findOne(session.tenantId, id);
   }
 
   // ==========================================================================
@@ -121,7 +121,7 @@ export class {{className}}sController {
     @CurrentUser() session: AuthSession,
     @ZodBody(Create{{className}}Schema) dto: Create{{className}}Dto,
   ): Promise<{{className}}Item> {
-    return this.{{varName}}sService.create(session.tenantId, dto);
+    return this.{{plural varName}}Service.create(session.tenantId, dto);
   }
 
   // ==========================================================================
@@ -139,7 +139,7 @@ export class {{className}}sController {
     @Param('id') id: string,
     @ZodBody(Update{{className}}Schema) dto: Update{{className}}Dto,
   ): Promise<{{className}}Item> {
-    return this.{{varName}}sService.update(session.tenantId, id, dto);
+    return this.{{plural varName}}Service.update(session.tenantId, id, dto);
   }
 
   // ==========================================================================
@@ -155,6 +155,6 @@ export class {{className}}sController {
     @CurrentUser() session: AuthSession,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.{{varName}}sService.remove(session.tenantId, id);
+    await this.{{plural varName}}Service.remove(session.tenantId, id);
   }
 }
