@@ -2,11 +2,15 @@
 
 import { FormBuilder, toast, type Field } from '@ethos/ui';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef } from 'react';
 import { z } from 'zod';
+
+import { OAuthButtons } from './components/oauth-buttons';
 
 import { api } from '@/lib/api-client';
 import { tenantFromHost } from '@/lib/auth';
+import { OAUTH_ERROR_MESSAGES } from '@/lib/oauth';
 import { useAuthStore, type User, type Tenant } from '@/stores/auth-store';
 
 const loginSchema = z.object({
@@ -60,6 +64,10 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}>
+        <OAuthErrorHandler />
+      </Suspense>
+
       <header className="space-y-1 text-center">
         <h2 className="text-foreground text-xl font-semibold">Bem-vindo de volta</h2>
         <p className="text-muted-foreground text-sm">Entre com sua conta para continuar</p>
@@ -72,6 +80,8 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         submitLabel="Entrar"
       />
+
+      <OAuthButtons />
 
       <div className="space-y-3 text-center text-sm">
         <Link
@@ -92,4 +102,29 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * D8.5.5 — Lê `?error=` UMA vez no mount, dispara toast em PT-BR e limpa a
+ * URL pra não re-disparar em refresh. Isolado em componente próprio +
+ * Suspense pra que o Next.js consiga prerender o /login como static
+ * (useSearchParams força CSR no parent — Suspense permite bail-out só
+ * desse trecho).
+ */
+function OAuthErrorHandler() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const handledRef = useRef(false);
+
+  useEffect(() => {
+    if (handledRef.current) return;
+    const error = searchParams.get('error');
+    if (!error) return;
+    handledRef.current = true;
+    const message = OAUTH_ERROR_MESSAGES[error] ?? OAUTH_ERROR_MESSAGES.oauth_callback_failed;
+    toast.error(message);
+    router.replace('/login');
+  }, [router, searchParams]);
+
+  return null;
 }

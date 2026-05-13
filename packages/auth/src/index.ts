@@ -40,3 +40,23 @@ export { NativeAuthAdapter } from './native-adapter';
 export type { OAuthProvider, OAuthTokens, OAuthProfile } from './oauth';
 export type { MfaProvider } from './mfa';
 export type { PasswordlessProvider } from './passwordless';
+
+// OAuth (D8.5) — providers + helpers, implementação concreta em #8.5 (W1.A).
+// Re-exports do subtree ./oauth/* (PKCE, state cookie, crypto, error codes, providers).
+export {
+  GoogleProvider,
+  MicrosoftProvider,
+  signStateCookie,
+  verifyStateCookie,
+  StateCookieError,
+  OAUTH_STATE_COOKIE_NAME,
+  OAUTH_STATE_COOKIE_MAX_AGE_SECONDS,
+  genVerifier,
+  genChallenge,
+  encryptToken,
+  decryptToken,
+  parseEncryptionKey,
+  buildErrorRedirect,
+  OAuthErrorCode,
+} from './oauth/index';
+export type { OAuthStatePayload } from './oauth/index';

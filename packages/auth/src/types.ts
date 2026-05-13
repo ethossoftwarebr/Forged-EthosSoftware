@@ -60,6 +60,9 @@ export interface AuthError {
     | 'TOKEN_EXPIRED'
     | 'TOKEN_INVALID'
     | 'TOKEN_REUSED'
-    | 'MFA_REQUIRED';
+    | 'MFA_REQUIRED'
+    // D8.5.6 — OAuth login flow (loginWithOAuth)
+    | 'EMAIL_NOT_VERIFIED' // anti-takeover: user existe mas emailVerified=null, recusa link automatico
+    | 'MARKETPLACE_REQUIRED'; // user tem >1 memberships e nenhum tenantSlug foi fornecido — caller redireciona pro picker
   message: string;
 }

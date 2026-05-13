@@ -10,6 +10,8 @@ import {
   signAccessToken,
   verifyAccessToken,
 } from './jwt';
+import type { OAuthProfile, OAuthTokens } from './oauth';
+import { encryptToken } from './oauth/oauth-crypto';
 import type { AuthRole, AuthSession, IssuedTokens, LoginCredentials, RegisterInput } from './types';
 
 /**
@@ -254,6 +256,134 @@ export class NativeAuthAdapter implements AuthAdapter {
   }
 
   // ==========================================================================
+  // loginWithOAuth (D8.5.6)
+  // ==========================================================================
+
+  async loginWithOAuth(input: {
+    provider: string;
+    profile: OAuthProfile;
+    tokens: OAuthTokens;
+    tenantSlug?: string;
+    encryptionKey: Buffer;
+    userAgent?: string;
+    ip?: string;
+  }): Promise<{ session: AuthSession; tokens: IssuedTokens; isNewUser: boolean }> {
+    const { provider, profile, tokens: providerTokens, tenantSlug, encryptionKey } = input;
+
+    // Encripta tokens do provider ANTES de qualquer write (fail fast se key invalida)
+    const encAccessToken = encryptToken(providerTokens.accessToken, encryptionKey);
+    const encRefreshToken = providerTokens.refreshToken
+      ? encryptToken(providerTokens.refreshToken, encryptionKey)
+      : null;
+    const encIdToken = providerTokens.idToken
+      ? encryptToken(providerTokens.idToken, encryptionKey)
+      : null;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // ---- 1) lookup OAuthAccount por (provider, providerAccountId) ----------
+      const existingAccount = await tx.oAuthAccount.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider,
+            providerAccountId: profile.providerAccountId,
+          },
+        },
+      });
+
+      if (existingAccount) {
+        // User já vinculado — atualiza tokens encriptados e resolve tenant
+        await tx.oAuthAccount.update({
+          where: { id: existingAccount.id },
+          data: {
+            accessToken: encAccessToken,
+            refreshToken: encRefreshToken,
+            idToken: encIdToken,
+            expiresAt: providerTokens.expiresAt ?? null,
+            scope: providerTokens.scope ?? null,
+          },
+        });
+
+        const user = await tx.user.findUnique({ where: { id: existingAccount.userId } });
+        if (!user) {
+          // reason: integridade referencial — OAuthAccount.userId tem onDelete:Cascade,
+          // se chegou aqui sem user é bug de schema.
+          throw authError('INVALID_CREDENTIALS', 'OAuthAccount sem User vinculado.');
+        }
+        const { tenant, role } = await resolveTenantForUser(tx, user.id, tenantSlug);
+        return { user, tenant, role, isNewUser: false };
+      }
+
+      // ---- 2) lookup User por email -----------------------------------------
+      let user = await tx.user.findUnique({ where: { email: profile.email } });
+      let isNewUser = false;
+
+      if (user) {
+        // 2a/2b: link automatico só se email já verificado localmente
+        if (!user.emailVerified) {
+          throw authError(
+            'EMAIL_NOT_VERIFIED',
+            'Email existe mas não está verificado — confirme via link de email antes de vincular OAuth.',
+          );
+        }
+
+        // Atualiza User.image se vazio (não sobrescreve avatar custom)
+        if (!user.image && profile.picture) {
+          user = await tx.user.update({
+            where: { id: user.id },
+            data: { image: profile.picture },
+          });
+        }
+      } else {
+        // 2c: cria User novo (password=null, emailVerified=now() — provider já validou)
+        user = await tx.user.create({
+          data: {
+            email: profile.email,
+            password: null,
+            name: profile.name ?? null,
+            image: profile.picture ?? null,
+            emailVerified: profile.emailVerified ? new Date() : null,
+          },
+        });
+        isNewUser = true;
+
+        if (!user.emailVerified) {
+          // reason: defesa em profundidade — provider deveria garantir emailVerified=true
+          // após verifyIdToken; se chegou false aqui, rejeita pra não criar conta órfã.
+          throw authError(
+            'EMAIL_NOT_VERIFIED',
+            'Provider OAuth retornou email_verified=false — login rejeitado.',
+          );
+        }
+      }
+
+      // Cria OAuthAccount
+      await tx.oAuthAccount.create({
+        data: {
+          userId: user.id,
+          provider,
+          providerAccountId: profile.providerAccountId,
+          accessToken: encAccessToken,
+          refreshToken: encRefreshToken,
+          idToken: encIdToken,
+          expiresAt: providerTokens.expiresAt ?? null,
+          scope: providerTokens.scope ?? null,
+        },
+      });
+
+      // ---- 3) Tenant resolution ---------------------------------------------
+      const { tenant, role } = await resolveTenantForUser(tx, user.id, tenantSlug, profile.email);
+      return { user, tenant, role, isNewUser };
+    });
+
+    const tokens = await this.issueTokens(result.user.id, result.tenant.id, [result.role], {
+      userAgent: input.userAgent,
+      ip: input.ip,
+    });
+    const session = await this.verifyAccessToken(tokens.accessToken);
+    return { session, tokens, isNewUser: result.isNewUser };
+  }
+
+  // ==========================================================================
   // Helpers
   // ==========================================================================
 
@@ -346,10 +476,104 @@ function authError(
     | 'TOKEN_EXPIRED'
     | 'TOKEN_INVALID'
     | 'TOKEN_REUSED'
-    | 'MFA_REQUIRED',
+    | 'MFA_REQUIRED'
+    | 'EMAIL_NOT_VERIFIED'
+    | 'MARKETPLACE_REQUIRED',
   message: string,
 ): Error {
   const err = new Error(message) as Error & { code: string };
   err.code = code;
   return err;
+}
+
+/**
+ * Resolve tenant pra um user durante OAuth login (D8.5.6 step 3).
+ *
+ *  - `tenantSlug` provided → lookup obrigatório; cria membership como `member` se
+ *    user ainda não pertence ao tenant.
+ *  - `tenantSlug` undefined → memberships=0 cria tenant novo (owner); =1 usa esse;
+ *    >1 lança `MARKETPLACE_REQUIRED`.
+ */
+async function resolveTenantForUser(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  tenantSlug: string | undefined,
+  email?: string,
+): Promise<{ tenant: { id: string; slug: string }; role: AuthRole }> {
+  if (tenantSlug) {
+    const tenant = await tx.tenant.findUnique({ where: { slug: tenantSlug } });
+    if (!tenant) {
+      throw authError('TENANT_NOT_FOUND', `Tenant "${tenantSlug}" inexistente.`);
+    }
+    const existingMember = await tx.tenantMember.findUnique({
+      where: { tenantId_userId: { tenantId: tenant.id, userId } },
+    });
+    if (existingMember) {
+      return { tenant, role: existingMember.role as AuthRole };
+    }
+    // Cria membership como `member` (default) — owner só por criação ou convite explicito
+    const member = await tx.tenantMember.create({
+      data: { tenantId: tenant.id, userId, role: 'member' as Role },
+    });
+    return { tenant, role: member.role as AuthRole };
+  }
+
+  // Sem slug — inspeciona memberships
+  const memberships = await tx.tenantMember.findMany({
+    where: { userId },
+    include: { tenant: true },
+  });
+
+  if (memberships.length === 0) {
+    // Cria tenant novo, user vira owner
+    const slug = deriveTenantSlug(userId, email);
+    const tenant = await tx.tenant.create({
+      data: {
+        slug,
+        name: slug,
+      },
+    });
+    const member = await tx.tenantMember.create({
+      data: { tenantId: tenant.id, userId, role: 'owner' as Role },
+    });
+    return { tenant, role: member.role as AuthRole };
+  }
+
+  if (memberships.length === 1) {
+    const m = memberships[0]!;
+    return { tenant: m.tenant, role: m.role as AuthRole };
+  }
+
+  throw authError(
+    'MARKETPLACE_REQUIRED',
+    'Usuário pertence a múltiplos tenants — caller deve solicitar seleção e re-chamar com tenantSlug.',
+  );
+}
+
+/**
+ * Deriva slug pra novo tenant em OAuth signup sem `tenantSlug`:
+ *   1. Se email tem domain corporativo (não gmail/outlook/yahoo/etc), usa o domain.
+ *   2. Senão fallback `default-${userId.slice(-6)}`.
+ *
+ * Slug é sanitizado pra lowercase alfanumérico + hífen.
+ */
+function deriveTenantSlug(userId: string, email?: string): string {
+  const publicDomains = new Set([
+    'gmail.com',
+    'outlook.com',
+    'hotmail.com',
+    'yahoo.com',
+    'icloud.com',
+    'live.com',
+    'protonmail.com',
+    'aol.com',
+  ]);
+  if (email) {
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (domain && !publicDomains.has(domain)) {
+      const slug = domain.replace(/\.[a-z]+$/, '').replace(/[^a-z0-9-]/g, '-');
+      if (slug.length > 0) return slug;
+    }
+  }
+  return `default-${userId.slice(-6).toLowerCase()}`;
 }

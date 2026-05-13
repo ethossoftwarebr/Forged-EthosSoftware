@@ -1,3 +1,4 @@
+import type { OAuthProfile, OAuthTokens } from './oauth';
 import type { AuthSession, IssuedTokens, LoginCredentials, RegisterInput } from './types';
 
 /**
@@ -38,4 +39,39 @@ export interface AuthAdapter {
    * Usado pelo JwtAuthGuard.
    */
   verifyAccessToken(token: string): Promise<AuthSession>;
+
+  /**
+   * Login/register via OAuth provider (D8.5.6). Recebe profile verificado do
+   * provider (após `verifyIdToken`). Estratégia de linking:
+   *
+   *   1. Lookup `OAuthAccount` por (provider, providerAccountId) → user já vinculado,
+   *      só re-emite tokens (`isNewUser=false`).
+   *   2. Senão lookup `User` por email:
+   *      a. found + `emailVerified !== null` → cria `OAuthAccount` linkado,
+   *         atualiza `User.image` se vazio.
+   *      b. found + `emailVerified === null` → throw `EMAIL_NOT_VERIFIED`
+   *         (anti-takeover: alguém pode ter registrado com email não verificado
+   *         pra sequestrar a conta quando o dono OAuth aparecer).
+   *      c. not found → cria `User` (`password=null`, `emailVerified=now()`,
+   *         `name`/`image` do profile) + `OAuthAccount` + tenant membership.
+   *   3. Tenant resolution:
+   *      a. `tenantSlug` provided → lookup obrigatório, throw `TENANT_NOT_FOUND` se inexistente.
+   *      b. `tenantSlug` undefined → busca memberships do user:
+   *         - 0 memberships → cria tenant novo (user vira `owner`); slug derivado
+   *           do email domain ou fallback `default-${userId.slice(-6)}`.
+   *         - 1 membership → usa esse tenant.
+   *         - >1 memberships → throw `MARKETPLACE_REQUIRED` (caller redireciona pro picker).
+   *   4. Tokens do provider (access/refresh/id) são gravados em `OAuthAccount`
+   *      **ENCRIPTADOS** via `encryptToken` (W1.A — AES-256-GCM).
+   *   5. Emite tokens internos via `issueTokens()` (mesmo fluxo do login normal).
+   */
+  loginWithOAuth(input: {
+    provider: string; // 'google' | 'microsoft' | extensible
+    profile: OAuthProfile;
+    tokens: OAuthTokens; // tokens vindos do exchangeCode — serão encriptados antes de gravar
+    tenantSlug?: string;
+    encryptionKey: Buffer; // 32 bytes — caller passa de env (D8.5 — OAUTH_ENC_KEY)
+    userAgent?: string;
+    ip?: string;
+  }): Promise<{ session: AuthSession; tokens: IssuedTokens; isNewUser: boolean }>;
 }
