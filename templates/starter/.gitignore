@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Turbo / cache
+.turbo/
+.eslintcache
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+
+# Prisma local
+prisma/migrations/dev.db*
+prisma/dev.db*

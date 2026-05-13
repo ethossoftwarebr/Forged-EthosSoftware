@@ -1,0 +1,33 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "services": {
+    "api": {
+      "build": {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "templates/starter/apps/api/Dockerfile",
+        "buildContext": "."
+      },
+      "deploy": {
+        "startCommand": "node dist/main.js",
+        "healthcheckPath": "/health",
+        "healthcheckTimeout": 30,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3
+      }
+    },
+    "web": {
+      "build": {
+        "builder": "NIXPACKS",
+        "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @ethos-app/web build",
+        "rootDirectory": "."
+      },
+      "deploy": {
+        "startCommand": "pnpm --filter @ethos-app/web start",
+        "healthcheckPath": "/",
+        "healthcheckTimeout": 30,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3
+      }
+    }
+  }
+}

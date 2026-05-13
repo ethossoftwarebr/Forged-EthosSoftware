@@ -1,5 +1,6 @@
 packages:
   - 'apps/*'
   - 'packages/*'
-  - 'templates/*'
   - 'templates/starter/apps/*'
+  # templates/starter/ root NÃO é workspace na v1 — é blueprint para standalone v2.
+  # Inclusão causaria recursão no turbo (lint/typecheck filtram @ethos-app/* incluindo self).

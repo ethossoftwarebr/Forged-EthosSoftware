@@ -1,10 +1,24 @@
 {
-  "name": "@ethos/starter",
+  "name": "@ethos-app/root",
   "version": "0.1.0",
   "private": true,
-  "description": "Template clonável de novo projeto cliente. Preenchido no prompt #12.",
+  "description": "Ethos starter — produto cliente baseado no Forge.",
   "scripts": {
-    "lint": "echo 'placeholder'",
-    "typecheck": "echo 'placeholder'"
+    "dev": "pnpm --parallel --filter '@ethos-app/*' dev",
+    "build": "pnpm --filter '@ethos-app/*' build",
+    "start": "pnpm --filter @ethos-app/api start & pnpm --filter @ethos-app/web start",
+    "lint": "pnpm --filter '@ethos-app/*' lint",
+    "typecheck": "pnpm --filter '@ethos-app/*' typecheck",
+    "test": "pnpm --filter '@ethos-app/*' test --if-present",
+    "db:generate": "pnpm --filter @ethos/database db:generate",
+    "db:migrate": "pnpm --filter @ethos/database db:migrate",
+    "db:seed": "pnpm --filter @ethos/database db:seed",
+    "db:studio": "pnpm --filter @ethos/database db:studio",
+    "forge:gen:backend": "pnpm -w forge:gen:backend",
+    "forge:gen:frontend": "pnpm -w forge:gen:frontend",
+    "bootstrap": "tsx ../../tools/bootstrap.ts"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

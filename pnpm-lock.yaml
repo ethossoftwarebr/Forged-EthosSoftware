@@ -411,8 +411,6 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
-  templates/starter: {}
-
   templates/starter/apps/api:
     dependencies:
       '@ethos/api-base':
