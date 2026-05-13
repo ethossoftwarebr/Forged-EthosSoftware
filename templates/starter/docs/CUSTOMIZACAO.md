@@ -273,7 +273,98 @@ Ver `packages/ai-chat/README.md` no monorepo Forge para: streaming, multi-tenant
 
 ---
 
-## Próximos passos
+## Habilitar RAG (@ethos/ai-rag)
+
+`Document` + `DocumentChunk` + `RagIngestJob` ja existem em `@ethos/database` (schema central, migration `20260513171723_ai_rag_init`). Para ligar no projeto:
+
+### 1. Pre-requisito: Postgres com pgvector
+
+Confirme que `docker-compose.yml` usa `pgvector/pgvector:pg16` (nao `postgres:16-alpine`):
+
+```bash
+docker exec ethos-postgres psql -U ethos -d ethos_dev -c "\dx vector"
+# Esperado: vector | 0.7+
+```
+
+### 2. Env vars
+
+Adicione em `.env`:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+VOYAGE_API_KEY=pa-...
+REDIS_URL=redis://localhost:6379
+```
+
+`REDIS_URL` ja existe no `.env.example` (usado pelo BullMQ). `ANTHROPIC_API_KEY` e compartilhado com `@ethos/ai-chat`.
+
+### 3. Registrar o modulo no API
+
+`apps/api/src/app.module.ts`:
+
+```ts
+import { AiRagModule } from '@ethos/ai-rag/server';
+
+@Module({
+  imports: [
+    // ... outros modulos
+    AiRagModule.forRoot({
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY!,
+      voyageApiKey: process.env.VOYAGE_API_KEY!,
+      redisUrl: process.env.REDIS_URL!,
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Endpoints expostos automaticamente em `/ai-rag/*` (todos sob JWT + multi-tenant).
+
+### 4. Plugar `<RagSearchInput />` no frontend
+
+`apps/web/src/app/search/page.tsx`:
+
+```tsx
+'use client';
+import { RagSearchInput } from '@ethos/ai-rag/client';
+
+export default function SearchPage() {
+  return (
+    <main className="mx-auto max-w-3xl p-6">
+      <h1 className="mb-4 text-2xl font-semibold">Busca semantica</h1>
+      <RagSearchInput apiBaseUrl={process.env.NEXT_PUBLIC_API_URL} />
+    </main>
+  );
+}
+```
+
+Adicione um entry no menu/sidebar custom apontando para `/search`.
+
+### 5. Ingerir documentos
+
+Via cURL para teste:
+
+```bash
+curl -X POST http://localhost:3001/ai-rag/ingest \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"kind":"text","text":"Conteudo do documento ..."}'
+```
+
+Worker BullMQ processa em background (concurrency=2). Status via `GET /ai-rag/documents/:id`.
+
+### Limitacoes V1
+
+- Streaming SSE chega em spec #14.5; V1 e sync (~1-3s por query)
+- `kind=file` espera filename como path FS local — multipart real fica para V2
+- `kind=url` baixa so `text/plain`; HTML parsing fica para V2
+- Reranker schema-ready (`RerankerAdapter`) mas sem impl V1 — spec #14.5 entrega Voyage rerank-2
+
+Ver `packages/ai-rag/README.md` para docs completas (custom embedder/chunker, migration gotchas pgvector, multi-tenant rules).
+
+---
+
+## Proximos passos
 
 - Leia [`docs/05-GERADORES-BACKEND.md`](../../../docs/05-GERADORES-BACKEND.md) e [`docs/06-GERADORES-FRONTEND.md`](../../../docs/06-GERADORES-FRONTEND.md) do Forge pra entender os geradores em profundidade.
 - Quando precisar de hooks before/after compartilhados entre vários services, considere extrair pra `apps/api/src/common/base-service.ts` (do produto, não da Forge).

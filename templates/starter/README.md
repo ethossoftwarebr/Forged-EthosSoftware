@@ -12,7 +12,10 @@ Este diretório (`templates/starter/`) é o ponto de partida de todo projeto cli
 
 - **Node.js >= 20** (Node 24 tem issue ESM com workspace deps — ver [Troubleshooting](#troubleshooting))
 - **pnpm >= 9** (`npm i -g pnpm@9`)
-- **Docker** (Postgres 16 + Redis 7 via `docker compose`)
+- **Docker** (Postgres 16 com pgvector + Redis 7 via `docker compose`)
+
+  > O `docker-compose.yml` usa a imagem `pgvector/pgvector:pg16` (não `postgres:16-alpine` vanilla) porque os packages `@ethos/ai-rag` e `@ethos/ai-chat` dependem da extension `pgvector`. Se você migrar pra Postgres managed em produção (Railway/Neon/Supabase), confirme que `pgvector` está disponível — ver [`docs/10-DEPLOY-RAILWAY.md`](../../docs/10-DEPLOY-RAILWAY.md#7-habilitar-pgvector-obrigatório-se-usar-ethosai-rag).
+
 - Git
 
 ---

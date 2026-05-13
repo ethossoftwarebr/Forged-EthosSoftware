@@ -1,0 +1,6 @@
+A Forge é o kit proprietário da Ethos Software. Ela inclui templates, geradores e packages plugáveis.
+Multi-tenant é decisão fundacional: todo projeto nasce com tenantId propagado via AsyncLocalStorage.
+O backend usa NestJS + Prisma + PostgreSQL 16. Identidade visual da Ethos é não-negociável.
+Tipos no schema central viram DTOs auto-gerados pelo prisma-generator-nestjs-dto.
+Auth usa argon2id + JWT EdDSA com kid rotation. Refresh tokens são hasheados antes de persistir.
+RAG plugável usa pgvector com vetores Voyage 3 large (1024 dimensões) + similarity HNSW.

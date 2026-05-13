@@ -131,15 +131,39 @@ PORT=3000
 # JWT_SECRET NÃO vai aqui — só backend
 ```
 
-### 7. Habilitar PgVector (se usar `@ethos/ai-rag`)
+### 7. Habilitar PgVector (obrigatório se usar `@ethos/ai-rag`)
 
-```sql
--- Conectar no Postgres via Railway "Connect" → "Query"
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE EXTENSION IF NOT EXISTS unaccent;
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+> **Importante:** o plugin `Postgres` padrão do Railway vem **sem `pgvector`**. Pra usar `@ethos/ai-rag` em produção, você precisa de uma das duas rotas abaixo. Em desenvolvimento local, o `docker-compose.yml` do Forge já usa `pgvector/pgvector:pg16` (D#14.13).
+
+**Rota A — Template Railway com pgvector (recomendado):**
+
+1. No projeto Railway: **+ New** → **Database** → procurar **"PostgreSQL pgvector"** no marketplace de templates.
+2. O template já provisiona `pgvector/pgvector:pg16` (mesma imagem do dev local) com extension pré-instalada.
+3. Após criar, conecte e rode:
+
+   ```sql
+   -- Railway UI: Postgres service → "Data" → "Query"
+   CREATE EXTENSION IF NOT EXISTS vector;
+   CREATE EXTENSION IF NOT EXISTS pg_trgm;
+   CREATE EXTENSION IF NOT EXISTS unaccent;
+   CREATE EXTENSION IF NOT EXISTS pgcrypto;
+   ```
+
+**Rota B — Postgres managed sem pgvector (Neon/Supabase/RDS):**
+
+- **Neon:** suporte nativo a pgvector. Habilitar via `CREATE EXTENSION vector;` no SQL Editor.
+- **Supabase:** pgvector incluído. Habilitar via Dashboard → Database → Extensions.
+- **AWS RDS:** disponível a partir de Postgres 15.2+. Habilitar via `rds.allowed_extensions` parameter group + `CREATE EXTENSION vector;`.
+- **Railway Postgres padrão (sem template pgvector):** **NÃO suportado** — `CREATE EXTENSION vector;` falha silenciosamente porque o binário não está instalado. Migre pro template pgvector ou para Neon/Supabase.
+
+**Validação pós-deploy:**
+
+```bash
+railway run --service postgres psql $DATABASE_URL -c "\dx vector"
+# Esperado: vector | 0.7+ (ou superior)
 ```
+
+Se a coluna `Version` aparece vazia, o binário não está instalado — rota A ou B obrigatória.
 
 ### 8. Configurar custom domain (opcional)
 
@@ -208,10 +232,10 @@ Railway pinga health check periodicamente. Se 3 falhas seguidas, restart automá
 
 ```typescript
 // apps/api/src/health/health.controller.ts
-import { Controller, Get } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
+import { Controller, Get } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
-@Controller("health")
+@Controller('health')
 export class HealthController {
   constructor(private prisma: PrismaService) {}
 
@@ -220,12 +244,12 @@ export class HealthController {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return {
-        status: "ok",
+        status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       };
     } catch (err) {
-      throw new Error("Database unhealthy");
+      throw new Error('Database unhealthy');
     }
   }
 }
@@ -238,7 +262,7 @@ A própria página inicial serve. Mas pode-se criar `/api/health/route.ts`:
 ```typescript
 // apps/web/src/app/api/health/route.ts
 export async function GET() {
-  return Response.json({ status: "ok", timestamp: new Date().toISOString() });
+  return Response.json({ status: 'ok', timestamp: new Date().toISOString() });
 }
 ```
 
@@ -255,14 +279,14 @@ Railway agrupa logs por service em tempo real. Acesso:
 
 ```typescript
 // apps/api/src/main.ts
-import { Logger } from "@nestjs/common";
+import { Logger } from '@nestjs/common';
 
-const logger = new Logger("Bootstrap");
+const logger = new Logger('Bootstrap');
 
 // Em produção, usar logger estruturado
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === 'production') {
   // Logs em JSON pra facilitar query no Railway
-  app.useLogger(["error", "warn", "log"]);
+  app.useLogger(['error', 'warn', 'log']);
 }
 ```
 
@@ -283,7 +307,7 @@ pnpm --filter web add @sentry/nextjs
 
 ```typescript
 // apps/api/src/main.ts
-import * as Sentry from "@sentry/node";
+import * as Sentry from '@sentry/node';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -330,12 +354,12 @@ Pra disaster recovery completo: documentar processo de recriar projeto Railway d
 
 Estimativas Railway (em USD/mês):
 
-| Tipo de projeto | Postgres | Redis | API | Web | Total estimado |
-|-----------------|----------|-------|-----|-----|----------------|
-| MVP/dev | $5 | $5 | $5 | $5 | **~$20** |
-| Pequeno em produção | $10 | $5 | $10 | $10 | **~$35** |
-| Médio (50 users ativos) | $20 | $10 | $25 | $20 | **~$75** |
-| Grande (500+ users) | $50 | $20 | $80 | $50 | **~$200** |
+| Tipo de projeto         | Postgres | Redis | API | Web | Total estimado |
+| ----------------------- | -------- | ----- | --- | --- | -------------- |
+| MVP/dev                 | $5       | $5    | $5  | $5  | **~$20**       |
+| Pequeno em produção     | $10      | $5    | $10 | $10 | **~$35**       |
+| Médio (50 users ativos) | $20      | $10   | $25 | $20 | **~$75**       |
+| Grande (500+ users)     | $50      | $20   | $80 | $50 | **~$200**      |
 
 Acima de $200/mês, considerar migrar:
 
@@ -351,11 +375,13 @@ Mas pra v1 e v2 da Forge, Railway é recomendação default.
 ## Variáveis sensíveis: como gerenciar
 
 **Nunca:**
+
 - Commitar `.env` no git
 - Compartilhar API keys via Slack/email em texto plano
 - Usar mesmas keys em dev e prod
 
 **Sempre:**
+
 - Variáveis de produção apenas no Railway UI
 - Rotacionar keys a cada 6-12 meses
 - Usar variáveis diferentes por environment (dev, staging, prod)
@@ -375,10 +401,12 @@ pnpm prisma migrate deploy && node dist/main.js
 ```
 
 Vantagens:
+
 - Sem step manual
 - Zero downtime na maioria dos casos (Prisma migrate deploy é idempotente)
 
 Cuidados:
+
 - Migrations destrutivas (drop column, rename) precisam de planejamento. Padrão recomendado:
   1. Deploy 1: adicionar nova coluna/tabela mantendo a antiga
   2. Deploy 2: backfill de dados

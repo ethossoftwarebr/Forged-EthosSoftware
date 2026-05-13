@@ -43,6 +43,10 @@ export function withTenantExtension(getTenantId: () => string | null) {
           // hands a union of every model+operation arg shape, which can't be
           // narrowed sanely. We mutate the same object the runtime executes.
           const mutable = (args ?? {}) as Record<string, unknown>;
+          // TS 5.6+ narrows Array.includes branches by literal subset; Prisma
+          // 5.22 returns the full operation union at runtime — cast to escape
+          // narrowing for the create/upsert branches.
+          const op = operation as string;
 
           if (
             [
@@ -58,23 +62,23 @@ export function withTenantExtension(getTenantId: () => string | null) {
               'groupBy',
               'update',
               'delete',
-            ].includes(operation)
+            ].includes(op)
           ) {
             const where = (mutable.where as Record<string, unknown> | undefined) ?? {};
             mutable.where = { ...where, tenantId };
-          } else if (operation === 'create') {
+          } else if (op === 'create') {
             const data = (mutable.data as Record<string, unknown> | undefined) ?? {};
             if (data.tenantId === undefined) {
               mutable.data = { tenantId, ...data };
             }
-          } else if (operation === 'createMany' || operation === 'createManyAndReturn') {
+          } else if (op === 'createMany' || op === 'createManyAndReturn') {
             const data = mutable.data;
             if (Array.isArray(data)) {
               mutable.data = data.map((d) => ({ tenantId, ...(d as Record<string, unknown>) }));
             } else if (data) {
               mutable.data = { tenantId, ...(data as Record<string, unknown>) };
             }
-          } else if (operation === 'upsert') {
+          } else if (op === 'upsert') {
             const where = (mutable.where as Record<string, unknown> | undefined) ?? {};
             mutable.where = { ...where, tenantId };
             const create = (mutable.create as Record<string, unknown> | undefined) ?? {};
