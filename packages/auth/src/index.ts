@@ -60,3 +60,13 @@ export {
   OAuthErrorCode,
 } from './oauth/index';
 export type { OAuthStatePayload } from './oauth/index';
+
+// Passwordless / Magic Link (D8.6) — provider concreto + error codes.
+// Re-exports do subtree ./passwordless/* (W1.B do #8.6).
+export {
+  EmailMagicLinkProvider,
+  MagicLinkErrorCode,
+  ALL_MAGIC_LINK_ERROR_CODES,
+  buildMagicErrorRedirect,
+} from './passwordless/index';
+export type { EmailMagicLinkProviderConfig } from './passwordless/index';

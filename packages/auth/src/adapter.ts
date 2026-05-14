@@ -74,4 +74,30 @@ export interface AuthAdapter {
     userAgent?: string;
     ip?: string;
   }): Promise<{ session: AuthSession; tokens: IssuedTokens; isNewUser: boolean }>;
+
+  /**
+   * Login/register via Magic Link (D8.6.6 — simétrico a `loginWithOAuth` sem OAuthAccount).
+   *
+   * Caller (`EmailMagicLinkProvider.verifyToken`) já consumiu o token plaintext
+   * e verificou single-use; este método recebe um email **já validado por posse
+   * do inbox** e gerencia o resto:
+   *
+   *   1. Lookup `User` por email:
+   *      a. found + `emailVerified !== null` → procede pra tenant resolution.
+   *      b. found + `emailVerified === null` → seta `emailVerified=now()`
+   *         (Magic Link valida implicitamente — chegou no email = controla o inbox).
+   *      c. not found → cria `User` (`password=null`, `name=email.split('@')[0]`,
+   *         `image=null`, `emailVerified=now()`).
+   *   2. Tenant resolution: igual loginWithOAuth (subdomain + marketplace fallback).
+   *   3. Emite tokens internos via `issueTokens()`.
+   *
+   * Sem `profile` — Magic Link não traz nome/avatar. Sem `encryptionKey` — não
+   * existe access/refresh token de provider externo pra encriptar.
+   */
+  loginWithMagicLink(input: {
+    email: string;
+    tenantSlug?: string;
+    userAgent?: string;
+    ip?: string;
+  }): Promise<{ session: AuthSession; tokens: IssuedTokens; isNewUser: boolean }>;
 }

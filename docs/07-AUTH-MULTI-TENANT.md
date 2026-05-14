@@ -861,9 +861,93 @@ Em dev local com subdomain, edite `C:\Windows\System32\drivers\etc\hosts` (ou `/
 
 ### Próximos passos (post-#8.5)
 
-- **#8.6** — Magic Link (link de login por email)
 - **#8.7** — MFA / TOTP
 - **Pós-v1** — WebAuthn / Passkey, SAML, Apple Sign-In, refresh-token rotation automática no provider OAuth
+
+---
+
+## Magic Link (passwordless por email) — #8.6
+
+Login sem senha: user digita email → backend envia link único TTL 15min → user clica → loga (e registra automaticamente se conta nova). Implementado em `@ethos/email` + `@ethos/auth/passwordless` + rotas no starter API.
+
+### Fluxo end-to-end
+
+1. User abre `/login` → preenche email no `<MagicLinkForm />` → submit
+2. Browser → `POST /auth/magic-link/request { email }` (no subdomain do tenant)
+3. Backend resolve `tenantSlug` do Host header (igual D8.5.1), gera token plaintext `crypto.randomBytes(32).toString('base64url')` (256-bit entropy), SHA-256 do plaintext vira `tokenHash` (determinístico — permite `@unique` lookup), persiste `MagicLinkToken{ email, tenantId, tokenHash, expiresAt: now+15min, usedAt: null }`
+4. Backend dispara email via `EmailAdapter.sendTransactional` (default `ResendAdapter`) com link `${appUrl}/auth/magic-link/verify?token=${plaintext}`
+5. Response: **sempre 200 + delay constante 300ms** (anti-enumeração total — não revela se email existe nem se rate-limit acionado)
+6. User abre email → clica link → browser carrega `/auth/magic-link/verify?token=...` (web), client component redireciona pro backend
+7. Backend `GET /auth/magic-link/verify?token=...` faz: SHA-256 do token → lookup `MagicLinkToken` por `tokenHash @unique` → valida (`usedAt === null`, `expiresAt > now`, `tenantId === resolvedTenantId`) → set `usedAt: now()` atômico (`updateMany where usedAt: null`) → chama `AuthAdapter.loginWithMagicLink({ email, tenantSlug })`
+8. Adapter: lookup User por email → existe (auto-verifica `emailVerified=now()` se null — link no email prova controle) ou cria novo (`password: null`, `name: email.split('@')[0]`, `image: null`, `emailVerified: now()`) → resolve tenant via `resolveTenantForUser` → `issueTokens()` → seta cookies access+refresh → redirect `/dashboard`
+9. Falha em qualquer ponto → 302 `/login?error=magic_*` com code apropriado
+
+### Decisões travadas (D8.6.1–D8.6.8)
+
+| #          | Decisão                 | Travada                                                                      | Razão                                                                                                                                                                                  |
+| ---------- | ----------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D8.6.1** | Email provider          | Resend (default) + `EmailAdapter` pluggable                                  | Free tier 100/dia, DKIM auto, zero-Redis, lazy import preserva cold start                                                                                                              |
+| **D8.6.2** | Token hash              | **SHA-256 hex** (não argon2id)                                               | Argon2 é não-determinístico (salt) — impede `@unique` lookup. Token tem 256-bit entropy + TTL 15min + single-use → SHA-256 é seguro pra este caso                                      |
+| **D8.6.3** | Rate limit              | `@nestjs/throttler` 5/h/IP (default tracker)                                 | Email-based tracker fica como follow-up se abuse via IP rotation detectado                                                                                                             |
+| **D8.6.4** | Tenant resolution       | subdomain + marketplace fallback (reuse D8.5.1)                              | `tenantSlug` resolvido do Host header no `POST /request`, persistido em `MagicLinkToken.tenantId`. Body NUNCA carrega tenantId                                                         |
+| **D8.6.5** | Anti-enumeração         | sempre 200 OK + delay constante 300ms                                        | Mede elapsed e `await sleep(Math.max(0, 300 - elapsed))`. Anti-enum **total**: web aceita qualquer status (200/429/4xx/5xx) e redireciona pra `/auth/magic-link/sent`                  |
+| **D8.6.6** | AuthAdapter extension   | novo método `loginWithMagicLink`                                             | Simétrico a `loginWithOAuth` (#8.5 D8.5.6). Sem `profile`. User criado com `name: email.split('@')[0]`, `image: null`, `emailVerified: now()`                                          |
+| **D8.6.7** | Tenant consistency      | validar no `verifyToken` que `MagicLinkToken.tenantId === resolved.tenantId` | Defesa: link aberto em subdomain diferente do origem rejeita com `magic_tenant_mismatch`                                                                                               |
+| **D8.6.8** | DI graceful degradation | providers só registrados se `RESEND_API_KEY` presente                        | `EMAIL_ADAPTER_TOKEN` retorna null se key ausente; `MAGIC_LINK_PROVIDER_TOKEN` cascata; controller responde 200 silencioso (POST) ou redirect `magic_email_provider_unavailable` (GET) |
+
+### Erros (mesma família OAuth)
+
+| Code                               | Quando                                 |
+| ---------------------------------- | -------------------------------------- |
+| `magic_token_invalid`              | tokenHash não encontrado               |
+| `magic_token_expired`              | `expiresAt < now()`                    |
+| `magic_token_used`                 | `usedAt !== null` (replay tentado)     |
+| `magic_request_throttled`          | rate limit excedido (429 do throttler) |
+| `magic_tenant_mismatch`            | link aberto em outro subdomain         |
+| `magic_email_provider_unavailable` | `RESEND_API_KEY` ausente em runtime    |
+| `magic_callback_failed`            | catch-all (logado server-side)         |
+
+Mensagens UI mapeadas em `templates/starter/apps/web/src/lib/magic-link.ts` (`MAGIC_LINK_ERROR_MESSAGES`).
+
+### Env vars
+
+```bash
+# Magic Link / Passwordless (#8.6) — todas opcionais. Provider só ativa se RESEND_API_KEY presente.
+RESEND_API_KEY=re_xxxxx                  # Obtenha em https://resend.com/api-keys
+EMAIL_FROM=noreply@yourdomain.com        # OBRIGATÓRIO se RESEND_API_KEY presente (superRefine)
+MAGIC_LINK_TTL_MINUTES=15                # Token expira após esse tempo (default 15)
+MAGIC_LINK_RATE_LIMIT_PER_HOUR=5         # Throttle por IP/email (default 5)
+```
+
+### Provisionamento (dev)
+
+1. **Resend account**: crie em https://resend.com, copie API key (`re_xxx`)
+2. **Domain verification**: adicione domínio em `https://resend.com/domains` — configure DNS (SPF + DKIM + Return-Path) conforme instruções do Resend
+3. **From address**: use email do domínio verificado (`noreply@seudominio.com`)
+4. **Free tier**: 100 emails/dia / 3000/mês — adequado pra dev/MVP. Upgrade pago se volume crescer
+5. **Dev sem Resend**: deixe `RESEND_API_KEY` vazio — provider auto-desabilita, UI esconde botão Magic Link ou mostra `magic_email_provider_unavailable`
+
+### Rotas (starter API)
+
+| Método | Rota                       | Notas                                                                                                           |
+| ------ | -------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| POST   | `/auth/magic-link/request` | Body `{ email }`. Sempre 200 + delay 300ms. `@Throttle 5/h`. `@Audit('auth.magic_link.request')`                |
+| GET    | `/auth/magic-link/verify`  | Query `?token=...`. 302 `/dashboard` (Set-Cookie) ou `/login?error=magic_*`. `@Audit('auth.magic_link.verify')` |
+
+### Segurança
+
+- **Token entropy**: 32 bytes random (256-bit) via `node:crypto.randomBytes`
+- **Hash**: SHA-256 hex no DB (`tokenHash @unique`); plaintext só no email/URL
+- **TTL**: 15min (configurable via env)
+- **Single-use**: enforced via `updateMany where usedAt: null` (atomic — race condition safe)
+- **HTTPS**: obrigatório em prod (token em URL — HTTP exporia em logs/history)
+- **Tenant lock**: `MagicLinkToken.tenantId` é fonte da verdade; verify rejeita se subdomain do clique difere
+- **Email-failure cleanup**: se `sendTransactional` throws, token row é deletado pra não vazar artefato
+
+### Próximos passos (post-#8.6)
+
+- **#8.7** — MFA / TOTP
+- **Pós-v1** — SMS-based OTP (sob demanda — Brasil tem SMS pricing alto), custom email templates (package separado), email-based rate-limit tracker se IP-only revelar abuse
 
 ---
 
@@ -892,5 +976,6 @@ Pra considerar auth completo na Forge:
 - [x] Audit log de eventos de auth (síncrono D7 — async pós-#15)
 - [x] Testes E2E do fluxo completo (auth + oauth)
 - [x] OAuth: Google + Microsoft (Auth Code + PKCE S256 + state JWS cookie) — #8.5
+- [x] Magic Link passwordless (Resend + SHA-256 token + anti-enum + tenant lock) — #8.6
 
 Tudo isso vem pronto no `templates/starter`. Projeto novo nasce com auth funcionando 100%.

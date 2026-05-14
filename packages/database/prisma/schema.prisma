@@ -261,7 +261,10 @@ model MagicLinkToken {
   id        String    @id @default(cuid())
   email     String
   tenantId  String
-  tokenHash String    @unique // argon2id
+  // SHA-256 hex do token plaintext (32B base64url, 256-bit entropy).
+  // Argon2id é não-determinístico (salt) — impossibilita lookup direto por @unique.
+  // SHA-256 é seguro pra tokens de alta entropia + TTL curto + single-use (W1.B do #8.6).
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())

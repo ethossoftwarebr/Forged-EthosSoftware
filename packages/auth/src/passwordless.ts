@@ -20,6 +20,13 @@ export interface PasswordlessProvider {
    * Verifica token recebido no callback. Cria User se ainda não existe
    * (registro automático pós-magic-link), cria membership no tenant, emite
    * tokens. Token é single-use — set usedAt após consumo.
+   *
+   * opts.resolvedTenantSlug exige consistência (D8.6.7) — link aberto em
+   * outro subdomain rejeita com `TENANT_MISMATCH`. opts.userAgent e opts.ip
+   * são passados pro log de auditoria.
    */
-  verifyToken(token: string): Promise<{ session: AuthSession; tokens: IssuedTokens }>;
+  verifyToken(
+    token: string,
+    opts?: { resolvedTenantSlug?: string; userAgent?: string; ip?: string },
+  ): Promise<{ session: AuthSession; tokens: IssuedTokens }>;
 }

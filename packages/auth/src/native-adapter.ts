@@ -384,6 +384,60 @@ export class NativeAuthAdapter implements AuthAdapter {
   }
 
   // ==========================================================================
+  // loginWithMagicLink (D8.6.6)
+  // ==========================================================================
+
+  async loginWithMagicLink(input: {
+    email: string;
+    tenantSlug?: string;
+    userAgent?: string;
+    ip?: string;
+  }): Promise<{ session: AuthSession; tokens: IssuedTokens; isNewUser: boolean }> {
+    const { email, tenantSlug } = input;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // ---- 1) lookup / create User -------------------------------------------
+      let user = await tx.user.findUnique({ where: { email } });
+      let isNewUser = false;
+
+      if (user) {
+        // Auto-verifica se ainda não estava — chegou no inbox = controla o email
+        if (!user.emailVerified) {
+          user = await tx.user.update({
+            where: { id: user.id },
+            data: { emailVerified: new Date() },
+          });
+        }
+      } else {
+        // Cria User com password=null + emailVerified=now() (Magic Link valida implicitamente).
+        // name derivado da parte local do email — pode ser editado depois nas configurações.
+        const namePart = email.split('@')[0] ?? null;
+        user = await tx.user.create({
+          data: {
+            email,
+            password: null,
+            name: namePart,
+            image: null,
+            emailVerified: new Date(),
+          },
+        });
+        isNewUser = true;
+      }
+
+      // ---- 2) Tenant resolution ---------------------------------------------
+      const { tenant, role } = await resolveTenantForUser(tx, user.id, tenantSlug, email);
+      return { user, tenant, role, isNewUser };
+    });
+
+    const tokens = await this.issueTokens(result.user.id, result.tenant.id, [result.role], {
+      userAgent: input.userAgent,
+      ip: input.ip,
+    });
+    const session = await this.verifyAccessToken(tokens.accessToken);
+    return { session, tokens, isNewUser: result.isNewUser };
+  }
+
+  // ==========================================================================
   // Helpers
   // ==========================================================================
 

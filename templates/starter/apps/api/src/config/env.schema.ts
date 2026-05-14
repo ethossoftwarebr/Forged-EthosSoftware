@@ -84,6 +84,18 @@ export const EnvSchema = z
       .string()
       .regex(/^[0-9a-fA-F]{64}$/, 'OAUTH_TOKEN_ENCRYPTION_KEY deve ter 64 chars hex (32 bytes).')
       .optional(),
+
+    /**
+     * Magic Link / Passwordless (D8.6). Opt-in: provider Resend só é registrado
+     * se `RESEND_API_KEY` presente; senão graceful degradation (D8.6.8 — routes
+     * retornam 200 silencioso/redirect com erro opaco, AuthModule loga skip).
+     *
+     * `EMAIL_FROM` deve estar em domain verificado no Resend. Required apenas
+     * quando `RESEND_API_KEY` presente (validação via superRefine abaixo).
+     */
+    RESEND_API_KEY: z.string().min(1).optional(),
+    EMAIL_FROM: z.email().optional(),
+    MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
   })
   .superRefine((env, ctx) => {
     // D8.5.4 — se algum provider OAuth está configurado, a encryption key vira obrigatória.
@@ -99,6 +111,15 @@ export const EnvSchema = z
         path: ['OAUTH_TOKEN_ENCRYPTION_KEY'],
         message:
           'OAUTH_TOKEN_ENCRYPTION_KEY é obrigatório quando há provider OAuth configurado (Google/Microsoft).',
+      });
+    }
+
+    // D8.6 — RESEND_API_KEY presente requer EMAIL_FROM (domain verificado).
+    if (env.RESEND_API_KEY && !env.EMAIL_FROM) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMAIL_FROM'],
+        message: 'EMAIL_FROM é obrigatório quando RESEND_API_KEY está configurado.',
       });
     }
   });

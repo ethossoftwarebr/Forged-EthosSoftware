@@ -21,6 +21,7 @@ const AuthLayout = forwardRef<HTMLDivElement, AuthLayoutProps>(
   ({ logo, footer, children, maxWidth, className, ...props }, ref) => (
     <div
       ref={ref}
+      role="main"
       className={cn(
         'flex min-h-screen flex-col items-center justify-center px-4 py-8',
         'from-background via-muted/30 to-background bg-gradient-to-br',

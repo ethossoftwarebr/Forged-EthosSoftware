@@ -12,7 +12,8 @@
     "./oauth": "./src/oauth/index.ts",
     "./oauth-interface": "./src/oauth.ts",
     "./mfa": "./src/mfa.ts",
-    "./passwordless": "./src/passwordless.ts"
+    "./passwordless": "./src/passwordless/index.ts",
+    "./passwordless-interface": "./src/passwordless.ts"
   },
   "scripts": {
     "lint": "echo 'placeholder'",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@ethos/config": "workspace:*",
+    "@ethos/email": "workspace:*",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
     "jest": "^29.7.0",

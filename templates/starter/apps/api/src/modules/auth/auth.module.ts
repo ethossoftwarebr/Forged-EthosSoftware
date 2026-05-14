@@ -1,17 +1,27 @@
 import { AUTH_ADAPTER_TOKEN, PRISMA_CLIENT_TOKEN } from '@ethos/api-base';
 import {
+  EmailMagicLinkProvider,
   NativeAuthAdapter,
   loadKeysetFromEnv,
   parseEncryptionKey,
+  type AuthAdapter,
   type JwtKeyset,
 } from '@ethos/auth';
 import { PrismaClient } from '@ethos/database';
+import { ResendAdapter } from '@ethos/email';
 import { Global, Logger, Module, type OnApplicationShutdown } from '@nestjs/common';
 
 import { EnvService } from '../../config/env.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { MagicLinkController } from './magic-link.controller';
+import {
+  EMAIL_ADAPTER_TOKEN,
+  MAGIC_LINK_PROVIDER_TOKEN,
+  type EmailAdapterOrNull,
+  type MagicLinkProviderOrNull,
+} from './magic-link.tokens';
 import { createOAuthRegistry } from './oauth-registry.provider';
 import { OAuthController } from './oauth.controller';
 import {
@@ -53,7 +63,7 @@ class PrismaProvider extends PrismaClient implements OnApplicationShutdown {
  */
 @Global()
 @Module({
-  controllers: [AuthController, OAuthController],
+  controllers: [AuthController, OAuthController, MagicLinkController],
   providers: [
     AuthService,
     // PrismaClient singleton — injetado em AuthAdapter + AuditLogInterceptor.
@@ -108,6 +118,49 @@ class PrismaProvider extends PrismaClient implements OnApplicationShutdown {
         return parseEncryptionKey(hex);
       },
     },
+    // EmailAdapter (D8.6.8) — ResendAdapter quando RESEND_API_KEY presente.
+    // null = graceful degradation; controller responde com erro opaco.
+    {
+      provide: EMAIL_ADAPTER_TOKEN,
+      inject: [EnvService],
+      useFactory: (env: EnvService): EmailAdapterOrNull => {
+        const key = env.get('RESEND_API_KEY');
+        if (!key) {
+          new Logger('MagicLink').log(
+            '[MagicLink] RESEND_API_KEY ausente — email provider desabilitado.',
+          );
+          return null;
+        }
+        return new ResendAdapter(key);
+      },
+    },
+    // EmailMagicLinkProvider (D8.6) — só registra se EmailAdapter resolvido.
+    // Cascata graceful: provider null força controller a responder com erro opaco.
+    {
+      provide: MAGIC_LINK_PROVIDER_TOKEN,
+      inject: [PRISMA_CLIENT_TOKEN, EMAIL_ADAPTER_TOKEN, AUTH_ADAPTER_TOKEN, EnvService],
+      useFactory: (
+        prisma: PrismaClient,
+        emailAdapter: EmailAdapterOrNull,
+        authAdapter: AuthAdapter,
+        env: EnvService,
+      ): MagicLinkProviderOrNull => {
+        if (!emailAdapter) return null;
+        const fromEmail = env.get('EMAIL_FROM');
+        if (!fromEmail) {
+          // Defense-in-depth — superRefine já garante presença, mas se chegou
+          // aqui com RESEND_API_KEY sem EMAIL_FROM, falha o boot ruidosamente.
+          throw new Error('EMAIL_FROM ausente com RESEND_API_KEY configurado.');
+        }
+        return new EmailMagicLinkProvider({
+          prisma,
+          emailAdapter,
+          authAdapter,
+          fromEmail,
+          ttlMinutes: env.get('MAGIC_LINK_TTL_MINUTES'),
+        });
+      },
+    },
   ],
   exports: [
     PRISMA_CLIENT_TOKEN,
@@ -115,6 +168,8 @@ class PrismaProvider extends PrismaClient implements OnApplicationShutdown {
     OAUTH_KEYSET_TOKEN,
     OAUTH_REGISTRY_TOKEN,
     OAUTH_ENCRYPTION_KEY_TOKEN,
+    EMAIL_ADAPTER_TOKEN,
+    MAGIC_LINK_PROVIDER_TOKEN,
   ],
 })
 export class AuthModule {}

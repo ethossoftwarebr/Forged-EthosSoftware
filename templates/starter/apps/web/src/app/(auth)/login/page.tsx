@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
 import { z } from 'zod';
 
+import { MagicLinkForm } from './components/magic-link-form';
 import { OAuthButtons } from './components/oauth-buttons';
 
 import { api } from '@/lib/api-client';
 import { tenantFromHost } from '@/lib/auth';
+import { MAGIC_LINK_ERROR_MESSAGES, isMagicLinkError } from '@/lib/magic-link';
 import { OAUTH_ERROR_MESSAGES } from '@/lib/oauth';
 import { useAuthStore, type User, type Tenant } from '@/stores/auth-store';
 
@@ -65,7 +67,7 @@ export default function LoginPage() {
   return (
     <div className="space-y-6">
       <Suspense fallback={null}>
-        <OAuthErrorHandler />
+        <LoginErrorHandler />
       </Suspense>
 
       <header className="space-y-1 text-center">
@@ -80,6 +82,11 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         submitLabel="Entrar"
       />
+
+      <div className="space-y-3">
+        <Divider label="ou" />
+        <MagicLinkForm />
+      </div>
 
       <OAuthButtons />
 
@@ -105,13 +112,16 @@ export default function LoginPage() {
 }
 
 /**
- * D8.5.5 — Lê `?error=` UMA vez no mount, dispara toast em PT-BR e limpa a
- * URL pra não re-disparar em refresh. Isolado em componente próprio +
- * Suspense pra que o Next.js consiga prerender o /login como static
- * (useSearchParams força CSR no parent — Suspense permite bail-out só
- * desse trecho).
+ * D8.5.5 + D8.6.5 — Lê `?error=` UMA vez no mount, dispara toast em PT-BR
+ * e limpa a URL pra não re-disparar em refresh. Resolve códigos `magic_*`
+ * via `MAGIC_LINK_ERROR_MESSAGES` antes de cair no fallback OAuth, pra
+ * evitar mensagem genérica enganosa pra erros de magic link.
+ *
+ * Isolado em componente próprio + Suspense pra que o Next.js consiga
+ * prerender o /login como static (useSearchParams força CSR no parent —
+ * Suspense permite bail-out só desse trecho).
  */
-function OAuthErrorHandler() {
+function LoginErrorHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const handledRef = useRef(false);
@@ -121,10 +131,32 @@ function OAuthErrorHandler() {
     const error = searchParams.get('error');
     if (!error) return;
     handledRef.current = true;
-    const message = OAUTH_ERROR_MESSAGES[error] ?? OAUTH_ERROR_MESSAGES.oauth_callback_failed;
+
+    const oauthFallback = OAUTH_ERROR_MESSAGES.oauth_callback_failed ?? 'Erro ao entrar.';
+    const message = isMagicLinkError(error)
+      ? (MAGIC_LINK_ERROR_MESSAGES[error] ?? oauthFallback)
+      : (OAUTH_ERROR_MESSAGES[error] ?? oauthFallback);
+
     toast.error(message);
     router.replace('/login');
   }, [router, searchParams]);
 
   return null;
+}
+
+/**
+ * Divider visual "—— ou ——" reaproveitado pra separar credentials,
+ * magic link e OAuth. Mesmo visual do oauth-buttons (consistência).
+ */
+function Divider({ label }: { label: string }) {
+  return (
+    <div className="relative" role="separator" aria-label={label}>
+      <div className="absolute inset-0 flex items-center" aria-hidden="true">
+        <span className="border-border w-full border-t" />
+      </div>
+      <div className="relative flex justify-center text-xs uppercase">
+        <span className="bg-background text-muted-foreground px-2">{label}</span>
+      </div>
+    </div>
+  );
 }
