@@ -3,10 +3,11 @@
 import { FormBuilder, toast, type Field } from '@ethos/ui';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import { MagicLinkForm } from './components/magic-link-form';
+import { MfaChallengeForm } from './components/mfa-challenge-form';
 import { OAuthButtons } from './components/oauth-buttons';
 
 import { api } from '@/lib/api-client';
@@ -22,10 +23,24 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-interface LoginResponse {
-  user: User;
-  tenant: Tenant;
-  roles: string[];
+/**
+ * Resposta do `/auth/login` (D8.7): pode ser sessão normal OU desafio MFA.
+ * Discriminada pelo flag `requiresMfa` — quando true, vem `mfaToken` (JWS HS256,
+ * 5min) e cookies NÃO são setados pelo backend.
+ */
+type LoginResponse =
+  | {
+      requiresMfa: true;
+      mfaToken: string;
+    }
+  | {
+      user: User;
+      tenant: Tenant;
+      roles: string[];
+    };
+
+function isMfaChallenge(data: LoginResponse): data is { requiresMfa: true; mfaToken: string } {
+  return 'requiresMfa' in data && data.requiresMfa === true;
 }
 
 const fields: Field[] = [
@@ -50,12 +65,28 @@ export default function LoginPage() {
   const setUser = useAuthStore((s) => s.setUser);
   const setTenant = useAuthStore((s) => s.setTenant);
 
+  /**
+   * Step 'credentials' = form email/senha (default).
+   * Step 'mfa'         = MfaChallengeForm com mfaToken in-memory (D8.7).
+   */
+  const [step, setStep] = useState<'credentials' | 'mfa'>('credentials');
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+
   async function handleSubmit(values: LoginValues) {
     try {
       const { data } = await api.post<LoginResponse>('/auth/login', {
         ...values,
         tenantSlug: tenantFromHost(),
       });
+      if (isMfaChallenge(data)) {
+        // Branch MFA: backend NÃO setou cookies. Guardamos mfaToken in-memory
+        // e renderizamos o MfaChallengeForm pra completar o login. SE user
+        // sair da página, o mfaToken é perdido (5min de exp no backend) —
+        // basta refazer login.
+        setMfaToken(data.mfaToken);
+        setStep('mfa');
+        return;
+      }
       setUser(data.user);
       setTenant(data.tenant);
       router.push('/dashboard');
@@ -70,43 +101,49 @@ export default function LoginPage() {
         <LoginErrorHandler />
       </Suspense>
 
-      <header className="space-y-1 text-center">
-        <h2 className="text-foreground text-xl font-semibold">Bem-vindo de volta</h2>
-        <p className="text-muted-foreground text-sm">Entre com sua conta para continuar</p>
-      </header>
+      {step === 'mfa' && mfaToken ? (
+        <MfaChallengeForm mfaToken={mfaToken} />
+      ) : (
+        <>
+          <header className="space-y-1 text-center">
+            <h2 className="text-foreground text-xl font-semibold">Bem-vindo de volta</h2>
+            <p className="text-muted-foreground text-sm">Entre com sua conta para continuar</p>
+          </header>
 
-      <FormBuilder
-        schema={loginSchema}
-        fields={fields}
-        defaultValues={{ email: '', password: '' }}
-        onSubmit={handleSubmit}
-        submitLabel="Entrar"
-      />
+          <FormBuilder
+            schema={loginSchema}
+            fields={fields}
+            defaultValues={{ email: '', password: '' }}
+            onSubmit={handleSubmit}
+            submitLabel="Entrar"
+          />
 
-      <div className="space-y-3">
-        <Divider label="ou" />
-        <MagicLinkForm />
-      </div>
+          <div className="space-y-3">
+            <Divider label="ou" />
+            <MagicLinkForm />
+          </div>
 
-      <OAuthButtons />
+          <OAuthButtons />
 
-      <div className="space-y-3 text-center text-sm">
-        <Link
-          href="/forgot-password"
-          className="text-muted-foreground hover:text-foreground inline-block transition-colors duration-150"
-        >
-          Esqueceu a senha?
-        </Link>
-        <p className="text-muted-foreground">
-          Não tem conta?{' '}
-          <Link
-            href="/register"
-            className="text-primary font-medium underline-offset-4 hover:underline"
-          >
-            Criar conta
-          </Link>
-        </p>
-      </div>
+          <div className="space-y-3 text-center text-sm">
+            <Link
+              href="/forgot-password"
+              className="text-muted-foreground hover:text-foreground inline-block transition-colors duration-150"
+            >
+              Esqueceu a senha?
+            </Link>
+            <p className="text-muted-foreground">
+              Não tem conta?{' '}
+              <Link
+                href="/register"
+                className="text-primary font-medium underline-offset-4 hover:underline"
+              >
+                Criar conta
+              </Link>
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

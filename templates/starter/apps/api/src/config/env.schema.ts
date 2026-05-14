@@ -96,6 +96,32 @@ export const EnvSchema = z
     RESEND_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM: z.email().optional(),
     MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+
+    /**
+     * MFA / TOTP (D8.7). `MFA_SECRET_ENCRYPTION_KEY` é obrigatório em produção
+     * — chave separada do OAuth pra blast-radius isolado (D8.7.4).
+     *
+     * Em dev/test, a lib lê `process.env.MFA_SECRET_ENCRYPTION_KEY` diretamente
+     * e falha-fast se ausente quando MFA é exercitado (lazy).
+     *
+     * Gere com:
+     *   openssl rand -hex 32
+     *
+     * `MFA_CHALLENGE_JWS_SECRET` assina o `mfaToken` curto (~5min) emitido após
+     * login com senha quando user tem `mfaEnabled=true`. HS256 simétrico (não
+     * EdDSA) porque é interno e tem TTL curto — escolhemos simplicidade.
+     */
+    MFA_SECRET_ENCRYPTION_KEY: z
+      .string()
+      .regex(/^[0-9a-fA-F]{64}$/i, 'MFA_SECRET_ENCRYPTION_KEY deve ter 64 chars hex (32 bytes).')
+      .optional(),
+    MFA_CHALLENGE_JWS_SECRET: z
+      .string()
+      .min(32, 'MFA_CHALLENGE_JWS_SECRET deve ter ≥32 chars.')
+      .optional(),
+    MFA_APP_NAME: z.string().default('Ethos'),
+    MFA_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(5),
+    MFA_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(900_000),
   })
   .superRefine((env, ctx) => {
     // D8.5.4 — se algum provider OAuth está configurado, a encryption key vira obrigatória.

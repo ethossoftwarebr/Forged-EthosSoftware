@@ -50,6 +50,43 @@ export interface IssuedTokens {
   refreshTokenExpiresAt: Date;
 }
 
+/**
+ * Payload do setup MFA (D8.7) — retornado por `setupMfa`. Secret bruto vai
+ * pro UI montar o QR code; backend já encriptou + persistiu MfaSecret com
+ * `verifiedAt=null` aguardando confirmação via primeiro código válido.
+ *
+ * O secret só permanece "candidato" — não é usado pra verificação até
+ * `confirmMfaSetup` ser chamado com sucesso.
+ */
+export interface MfaSetupPayload {
+  secret: string;
+  qrCodeDataUrl: string;
+  otpauthUrl: string;
+}
+
+/**
+ * Resultado de `verifyMfaChallenge` / `consumeBackupCode` (D8.7).
+ * `reason` é opcional — só preenchido em falha. Caller mapeia pra HTTP status
+ * via MfaErrorCode.
+ */
+export interface MfaChallengeResult {
+  ok: boolean;
+  reason?: 'invalid' | 'backup_used' | 'not_enabled';
+}
+
+/**
+ * Resultado de login que pode requerer MFA (D8.7.7). Quando `requiresMfa=true`,
+ * caller emite `mfaToken` (JWS short-lived, ~5min) pro frontend trocar pelo
+ * fluxo completo de tokens após verificar TOTP/backup code. Assinatura do
+ * mfaToken é responsabilidade do controller (W2), não da biblioteca.
+ */
+export interface LoginResult {
+  session?: AuthSession;
+  tokens?: IssuedTokens;
+  requiresMfa?: boolean;
+  mfaToken?: string;
+}
+
 export interface AuthError {
   code:
     | 'INVALID_CREDENTIALS'

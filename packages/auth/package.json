@@ -11,7 +11,8 @@
     "./native-adapter": "./src/native-adapter.ts",
     "./oauth": "./src/oauth/index.ts",
     "./oauth-interface": "./src/oauth.ts",
-    "./mfa": "./src/mfa.ts",
+    "./mfa": "./src/mfa/index.ts",
+    "./mfa-interface": "./src/mfa.ts",
     "./passwordless": "./src/passwordless/index.ts",
     "./passwordless-interface": "./src/passwordless.ts"
   },
@@ -25,13 +26,16 @@
   "dependencies": {
     "@ethos/database": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
-    "jose": "^5.9.6"
+    "jose": "^5.9.6",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@ethos/config": "workspace:*",
     "@ethos/email": "workspace:*",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
+    "@types/qrcode": "^1.5.5",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.0",
     "tsx": "^4.19.0",

@@ -7,6 +7,9 @@ export type {
   LoginCredentials,
   IssuedTokens,
   AuthError,
+  MfaSetupPayload,
+  MfaChallengeResult,
+  LoginResult,
 } from './types';
 
 // Crypto: argon2id (D1)
@@ -70,3 +73,18 @@ export {
   buildMagicErrorRedirect,
 } from './passwordless/index';
 export type { EmailMagicLinkProviderConfig } from './passwordless/index';
+
+// MFA / TOTP (D8.7) — provider concreto + backup codes + error codes.
+// Re-exports do subtree ./mfa/* (W1 do #8.7).
+export {
+  OtplibTotpProvider,
+  BACKUP_CODE_ALPHABET,
+  BACKUP_CODE_LENGTH,
+  BACKUP_CODE_COUNT,
+  generateBackupCodes,
+  hashBackupCode,
+  verifyBackupCode,
+  MfaErrorCode,
+  ALL_MFA_ERROR_CODES,
+} from './mfa/index';
+export type { TotpProvider, TotpSetupResult } from './mfa/index';

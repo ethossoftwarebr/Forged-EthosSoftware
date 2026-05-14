@@ -1,9 +1,14 @@
 /**
  * MfaProvider (D14.5) — interface pra TOTP / 2FA.
  *
- * Implementação concreta (`TotpMfaProvider`, lib otplib ou speakeasy) fica pra
- * **spec #8.7**. Schema (User.totpSecret + User.mfaEnabled + MfaBackupCode
- * table) já está pronto desde o #8.
+ * Implementação concreta foi feita em #8.7 (W1) — ver `./mfa/` subdir:
+ *   - `OtplibTotpProvider` (otplib@12 + qrcode@1.5) — D8.7.1/D8.7.5
+ *   - `generateBackupCodes` / `hashBackupCode` (Crockford base32 + argon2id) — D8.7.2/D8.7.3
+ *   - `MfaErrorCode` (5 códigos opacos) — D8.7
+ *
+ * Interface `MfaProvider` mantida pra compatibilidade com `D14.5`. O
+ * `OtplibTotpProvider` em `./mfa/totp.provider.ts` é a impl preferida nas
+ * novas integrações.
  */
 
 export interface MfaProvider {

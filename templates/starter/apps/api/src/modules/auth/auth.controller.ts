@@ -1,5 +1,6 @@
-import { CurrentUser, Public } from '@ethos/api-base';
-import type { AuthSession } from '@ethos/auth';
+import { AUTH_ADAPTER_TOKEN, CurrentUser, PRISMA_CLIENT_TOKEN, Public } from '@ethos/api-base';
+import type { AuthAdapter, AuthSession } from '@ethos/auth';
+import type { PrismaClient } from '@ethos/database';
 import {
   BadRequestException,
   Body,
@@ -9,6 +10,7 @@ import {
   HttpException,
   HttpStatus,
   Headers,
+  Inject,
   Post,
   Req,
   Res,
@@ -30,6 +32,7 @@ import {
 import { LoginSchema, type LoginDto } from './dto/login.dto';
 import { TenantSlugHeaderSchema } from './dto/refresh.dto';
 import { RegisterSchema, type RegisterDto } from './dto/register.dto';
+import { signMfaChallengeToken } from './mfa.controller';
 
 /**
  * AuthController — endpoints do AuthModule (D10):
@@ -52,6 +55,8 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly env: EnvService,
+    @Inject(PRISMA_CLIENT_TOKEN) private readonly prisma: PrismaClient,
+    @Inject(AUTH_ADAPTER_TOKEN) private readonly adapter: AuthAdapter,
   ) {}
 
   // ==========================================================================
@@ -110,11 +115,14 @@ export class AuthController {
     @Body(new ZodValidationPipe(LoginSchema)) dto: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{
-    user: { id: string };
-    tenant: { id: string; slug: string };
-    roles: string[];
-  }> {
+  ): Promise<
+    | {
+        user: { id: string };
+        tenant: { id: string; slug: string };
+        roles: string[];
+      }
+    | { requiresMfa: true; mfaToken: string }
+  > {
     const uaHeader = req.headers['user-agent'];
     const userAgent = Array.isArray(uaHeader) ? uaHeader[0] : uaHeader;
 
@@ -126,6 +134,36 @@ export class AuthController {
         userAgent,
         ip: req.ip,
       });
+
+      // D8.7.7 — branching MFA. Check user.mfaEnabled APÓS password verify; se on,
+      // revoga refresh recém-emitido + emite mfaToken JWS curto. Cookies NÃO setados.
+      // OAuth/Magic Link bypass MFA por design (D8.7.8) — outro fator já provou posse.
+      const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
+      if (user?.mfaEnabled) {
+        // Revoga o refresh token que o adapter emitiu — user só ganha sessão real
+        // após challenge MFA passar via /auth/mfa/challenge.
+        await this.adapter.logout(tokens.refreshToken).catch(() => {
+          // logout é idempotente — falha não bloqueia o flow MFA
+        });
+
+        const mfaSecret = this.env.get('MFA_CHALLENGE_JWS_SECRET');
+        if (!mfaSecret) {
+          // Defense: env schema permite ausência (optional); aqui falha-fast
+          // pq mfaEnabled=true sem MFA_CHALLENGE_JWS_SECRET é misconfig grave.
+          throw new HttpException(
+            { code: 'INTERNAL_ERROR', message: 'MFA configurado mas servidor indisponível.' },
+            HttpStatus.SERVICE_UNAVAILABLE,
+          );
+        }
+
+        const mfaToken = await signMfaChallengeToken({
+          userId: session.userId,
+          tenantId: session.tenantId,
+          secret: mfaSecret,
+        });
+
+        return { requiresMfa: true, mfaToken };
+      }
 
       this.issueCookies(res, tokens);
 

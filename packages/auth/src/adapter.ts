@@ -1,5 +1,12 @@
 import type { OAuthProfile, OAuthTokens } from './oauth';
-import type { AuthSession, IssuedTokens, LoginCredentials, RegisterInput } from './types';
+import type {
+  AuthSession,
+  IssuedTokens,
+  LoginCredentials,
+  MfaChallengeResult,
+  MfaSetupPayload,
+  RegisterInput,
+} from './types';
 
 /**
  * AuthAdapter (D14.1) — contrato pluggable que torna o Forge agnóstico de
@@ -100,4 +107,70 @@ export interface AuthAdapter {
     userAgent?: string;
     ip?: string;
   }): Promise<{ session: AuthSession; tokens: IssuedTokens; isNewUser: boolean }>;
+
+  /**
+   * Inicia setup MFA (D8.7). Gera secret TOTP + QR + otpauth URL, persiste
+   * `MfaSecret { verifiedAt: null }` (estado pendente — invalida no
+   * `confirmMfaSetup` ou stale após TTL definido pelo caller).
+   *
+   * Throws:
+   *   - `MFA_ALREADY_ENABLED` — user já tem MfaSecret confirmado (verifiedAt != null).
+   *     Caller deve forçar `disableMfa` antes (com re-auth) pra trocar device.
+   */
+  setupMfa(input: {
+    userId: string;
+    tenantId: string;
+    issuer: string;
+    accountName: string;
+  }): Promise<MfaSetupPayload>;
+
+  /**
+   * Confirma setup MFA (D8.7). Busca `MfaSecret { verifiedAt: null }`,
+   * verifica primeiro código TOTP, marca `verifiedAt=now()`, gera 10 backup
+   * codes plaintext + persiste hashes via `MfaBackupCode[]`.
+   *
+   * Returns: `{ backupCodes }` — plaintext, exibido UMA ÚNICA vez no UI.
+   *
+   * Throws:
+   *   - `MFA_SETUP_NOT_CONFIRMED` — não há MfaSecret pendente (caller chamou /confirm sem /setup).
+   *   - `MFA_INVALID` — código de 6 dígitos não bate na window=1.
+   */
+  confirmMfaSetup(input: {
+    userId: string;
+    tenantId: string;
+    code: string;
+  }): Promise<{ backupCodes: string[] }>;
+
+  /**
+   * Verifica código TOTP em login challenge (D8.7). Busca MfaSecret confirmado,
+   * decifra secret, valida code via `OtplibTotpProvider.verify`.
+   *
+   * Returns `{ ok: true }` em sucesso ou `{ ok: false, reason: 'invalid' | 'not_enabled' }`.
+   * Caller não deve lançar — falha de challenge é fluxo normal de UX.
+   */
+  verifyMfaChallenge(input: {
+    userId: string;
+    tenantId: string;
+    code: string;
+  }): Promise<MfaChallengeResult>;
+
+  /**
+   * Consome backup code single-use (D8.7). Itera `MfaBackupCode[]` não usados,
+   * tenta `verifyBackupCode` em cada hash. Em match: marca `usedAt=now()`.
+   *
+   * Returns `{ ok: true }` ou `{ ok: false, reason: 'invalid' | 'backup_used' }`.
+   * Replay (mesmo code 2x) → `backup_used` na segunda tentativa.
+   */
+  consumeBackupCode(input: {
+    userId: string;
+    tenantId: string;
+    code: string;
+  }): Promise<MfaChallengeResult>;
+
+  /**
+   * Desabilita MFA pro user (D8.7). Apaga MfaSecret + MfaBackupCode[]. Caller
+   * (controller) é responsável por exigir re-auth (senha atual ou TOTP) antes
+   * de chamar — biblioteca não impõe.
+   */
+  disableMfa(input: { userId: string; tenantId: string }): Promise<void>;
 }

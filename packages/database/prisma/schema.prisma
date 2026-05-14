@@ -89,6 +89,7 @@ model User {
   emailVerified DateTime? // Google OAuth já entrega verificado (D12)
 
   // MFA (D14.4) — schema-ready pra #8.7
+  // @deprecated V1.1 — usar MfaSecret (D8.7.9); mantido pra retro-compat até migration data
   totpSecret String?
   mfaEnabled Boolean @default(false)
 
@@ -106,6 +107,7 @@ model User {
   sessions          Session[]
   auditLogs         AuditLog[]
   mfaBackupCodes    MfaBackupCode[]
+  mfaSecrets        MfaSecret[]
   chatConversations ChatConversation[]
 }
 
@@ -248,6 +250,26 @@ model MfaBackupCode {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+// ============================================================================
+// MfaSecret (D8.7.9) — secret TOTP encriptado AES-256-GCM (D8.7.4).
+// Substitui User.totpSecret (deprecated V1.1). Pendente de confirmação: row
+// criada no /setup com verifiedAt=null; marca verifiedAt=now() no /setup/confirm.
+// ============================================================================
+
+model MfaSecret {
+  id         String    @id @default(cuid())
+  userId     String
+  tenantId   String
+  secretEnc  String // AES-256-GCM ciphertext do segredo base32 (D8.7.4)
+  verifiedAt DateTime? // null = setup pendente; set = confirmado e ativo
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
   @@index([userId])
 }
 

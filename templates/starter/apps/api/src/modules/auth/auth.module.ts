@@ -22,6 +22,7 @@ import {
   type EmailAdapterOrNull,
   type MagicLinkProviderOrNull,
 } from './magic-link.tokens';
+import { MfaController } from './mfa.controller';
 import { createOAuthRegistry } from './oauth-registry.provider';
 import { OAuthController } from './oauth.controller';
 import {
@@ -63,7 +64,7 @@ class PrismaProvider extends PrismaClient implements OnApplicationShutdown {
  */
 @Global()
 @Module({
-  controllers: [AuthController, OAuthController, MagicLinkController],
+  controllers: [AuthController, OAuthController, MagicLinkController, MfaController],
   providers: [
     AuthService,
     // PrismaClient singleton — injetado em AuthAdapter + AuditLogInterceptor.

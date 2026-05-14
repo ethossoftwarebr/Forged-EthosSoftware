@@ -10,9 +10,20 @@ import {
   signAccessToken,
   verifyAccessToken,
 } from './jwt';
+import { generateBackupCodes, hashBackupCode, verifyBackupCode } from './mfa/backup-codes';
+import { MfaErrorCode } from './mfa/error-codes';
+import { OtplibTotpProvider, type TotpProvider } from './mfa/totp.provider';
 import type { OAuthProfile, OAuthTokens } from './oauth';
-import { encryptToken } from './oauth/oauth-crypto';
-import type { AuthRole, AuthSession, IssuedTokens, LoginCredentials, RegisterInput } from './types';
+import { decryptToken, encryptToken, parseEncryptionKey } from './oauth/oauth-crypto';
+import type {
+  AuthRole,
+  AuthSession,
+  IssuedTokens,
+  LoginCredentials,
+  MfaChallengeResult,
+  MfaSetupPayload,
+  RegisterInput,
+} from './types';
 
 /**
  * NativeAuthAdapter (D14.2) — implementação default do `AuthAdapter`.
@@ -31,10 +42,16 @@ import type { AuthRole, AuthSession, IssuedTokens, LoginCredentials, RegisterInp
  * (todos os tokens irmãos) — defesa contra replay.
  */
 export class NativeAuthAdapter implements AuthAdapter {
+  private readonly totpProvider: TotpProvider;
+
   constructor(
     private readonly prisma: PrismaClient,
     private readonly keyset: JwtKeyset,
-  ) {}
+    options?: { totpProvider?: TotpProvider },
+  ) {
+    // Default = otplib + qrcode (D8.7.1/D8.7.5). Caller pode injetar mock em testes.
+    this.totpProvider = options?.totpProvider ?? new OtplibTotpProvider();
+  }
 
   // ==========================================================================
   // Register
@@ -438,6 +455,169 @@ export class NativeAuthAdapter implements AuthAdapter {
   }
 
   // ==========================================================================
+  // MFA (D8.7) — setup/confirm/verify/consume/disable
+  // ==========================================================================
+
+  async setupMfa(input: {
+    userId: string;
+    tenantId: string;
+    issuer: string;
+    accountName: string;
+  }): Promise<MfaSetupPayload> {
+    const { userId, tenantId, issuer, accountName } = input;
+
+    // Bloqueia setup duplicado se já há MfaSecret confirmado.
+    const existing = await this.prisma.mfaSecret.findUnique({
+      where: { userId_tenantId: { userId, tenantId } },
+    });
+    if (existing && existing.verifiedAt) {
+      throw authError(
+        MfaErrorCode.MFA_ALREADY_ENABLED,
+        'MFA já está habilitado — desabilite primeiro pra trocar de device.',
+      );
+    }
+
+    const setup = await this.totpProvider.generateSecret({ issuer, accountName });
+    const encryptionKey = parseEncryptionKey(getMfaEncryptionKeyHex());
+    const secretEnc = encryptToken(setup.secret, encryptionKey);
+
+    // Upsert: se houver MfaSecret pendente antigo (verifiedAt=null), sobrescreve.
+    // Útil quando user abandonou setup anterior e refaz.
+    await this.prisma.mfaSecret.upsert({
+      where: { userId_tenantId: { userId, tenantId } },
+      create: { userId, tenantId, secretEnc },
+      update: { secretEnc, verifiedAt: null, createdAt: new Date() },
+    });
+
+    return {
+      secret: setup.secret,
+      qrCodeDataUrl: setup.qrCodeDataUrl,
+      otpauthUrl: setup.otpauthUrl,
+    };
+  }
+
+  async confirmMfaSetup(input: {
+    userId: string;
+    tenantId: string;
+    code: string;
+  }): Promise<{ backupCodes: string[] }> {
+    const { userId, tenantId, code } = input;
+
+    const pending = await this.prisma.mfaSecret.findUnique({
+      where: { userId_tenantId: { userId, tenantId } },
+    });
+    if (!pending || pending.verifiedAt !== null) {
+      throw authError(
+        MfaErrorCode.MFA_SETUP_NOT_CONFIRMED,
+        'Nenhum setup MFA pendente — chame /setup primeiro.',
+      );
+    }
+
+    const encryptionKey = parseEncryptionKey(getMfaEncryptionKeyHex());
+    const secret = decryptToken(pending.secretEnc, encryptionKey);
+
+    const codeOk = this.totpProvider.verify({ secret, code });
+    if (!codeOk) {
+      throw authError(MfaErrorCode.MFA_INVALID, 'Código TOTP inválido.');
+    }
+
+    const plainCodes = generateBackupCodes();
+    const hashes = await Promise.all(plainCodes.map((c) => hashBackupCode(c)));
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.mfaSecret.update({
+        where: { userId_tenantId: { userId, tenantId } },
+        data: { verifiedAt: new Date() },
+      });
+      // Limpa backup codes antigos (re-setup cenario) + persiste novos
+      await tx.mfaBackupCode.deleteMany({ where: { userId } });
+      await tx.mfaBackupCode.createMany({
+        data: hashes.map((codeHash) => ({ userId, codeHash })),
+      });
+    });
+
+    return { backupCodes: plainCodes };
+  }
+
+  async verifyMfaChallenge(input: {
+    userId: string;
+    tenantId: string;
+    code: string;
+  }): Promise<MfaChallengeResult> {
+    const { userId, tenantId, code } = input;
+
+    const secret = await this.prisma.mfaSecret.findUnique({
+      where: { userId_tenantId: { userId, tenantId } },
+    });
+    if (!secret || !secret.verifiedAt) {
+      return { ok: false, reason: 'not_enabled' };
+    }
+
+    const encryptionKey = parseEncryptionKey(getMfaEncryptionKeyHex());
+    const plainSecret = decryptToken(secret.secretEnc, encryptionKey);
+
+    const ok = this.totpProvider.verify({ secret: plainSecret, code });
+    return ok ? { ok: true } : { ok: false, reason: 'invalid' };
+  }
+
+  async consumeBackupCode(input: {
+    userId: string;
+    tenantId: string;
+    code: string;
+  }): Promise<MfaChallengeResult> {
+    const { userId, code } = input;
+
+    // Confirma MFA habilitado pra esse user/tenant
+    const secret = await this.prisma.mfaSecret.findUnique({
+      where: { userId_tenantId: { userId, tenantId: input.tenantId } },
+    });
+    if (!secret || !secret.verifiedAt) {
+      return { ok: false, reason: 'not_enabled' };
+    }
+
+    // Itera codes não usados — argon2 verify só funciona via comparison (sem lookup direto)
+    const codes = await this.prisma.mfaBackupCode.findMany({
+      where: { userId, usedAt: null },
+    });
+
+    for (const row of codes) {
+      const match = await verifyBackupCode(code, row.codeHash);
+      if (match) {
+        // Optimistic update: race com 2 clicks vira "já usado" no count=0
+        const claimed = await this.prisma.mfaBackupCode.updateMany({
+          where: { id: row.id, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+        if (claimed.count === 0) {
+          return { ok: false, reason: 'backup_used' };
+        }
+        return { ok: true };
+      }
+    }
+
+    // Code não matched em nenhum row não-usado — pode ser inválido OU já usado.
+    // Verifica se há row matching MAS usado pra responder backup_used (replay).
+    const usedCodes = await this.prisma.mfaBackupCode.findMany({
+      where: { userId, NOT: { usedAt: null } },
+    });
+    for (const row of usedCodes) {
+      if (await verifyBackupCode(code, row.codeHash)) {
+        return { ok: false, reason: 'backup_used' };
+      }
+    }
+
+    return { ok: false, reason: 'invalid' };
+  }
+
+  async disableMfa(input: { userId: string; tenantId: string }): Promise<void> {
+    const { userId, tenantId } = input;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.mfaSecret.deleteMany({ where: { userId, tenantId } });
+      await tx.mfaBackupCode.deleteMany({ where: { userId } });
+    });
+  }
+
+  // ==========================================================================
   // Helpers
   // ==========================================================================
 
@@ -532,12 +712,27 @@ function authError(
     | 'TOKEN_REUSED'
     | 'MFA_REQUIRED'
     | 'EMAIL_NOT_VERIFIED'
-    | 'MARKETPLACE_REQUIRED',
+    | 'MARKETPLACE_REQUIRED'
+    | (typeof MfaErrorCode)[keyof typeof MfaErrorCode],
   message: string,
 ): Error {
   const err = new Error(message) as Error & { code: string };
   err.code = code;
   return err;
+}
+
+/**
+ * Lê `MFA_SECRET_ENCRYPTION_KEY` (D8.7.4) — separada do OAuth pra blast-radius
+ * isolado se uma das chaves vazar. Falha fast em runtime quando ausente.
+ */
+function getMfaEncryptionKeyHex(): string {
+  const key = process.env.MFA_SECRET_ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error(
+      'MFA_SECRET_ENCRYPTION_KEY ausente. Gere via `openssl rand -hex 32` e configure no .env.',
+    );
+  }
+  return key;
 }
 
 /**
